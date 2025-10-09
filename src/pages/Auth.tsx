@@ -117,7 +117,7 @@ const Auth = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="student@smu.edu.sg or student@computing.smu.edu.sg"
+                placeholder="your.name@smu.edu.sg"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

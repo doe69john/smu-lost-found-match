@@ -40,61 +40,61 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
+      <main className="container py-4 md:py-8 px-4">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Welcome to SMU Lost & Found. Report or search for lost items.
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Lost Items</CardTitle>
-              <Search className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Lost Items</CardTitle>
+              <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.lostItems}</div>
-              <p className="text-xs text-muted-foreground">Reported by community</p>
+              <div className="text-xl md:text-2xl font-bold">{stats.lostItems}</div>
+              <p className="text-xs text-muted-foreground">Total active</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Found Items</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Found Items</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.foundItems}</div>
-              <p className="text-xs text-muted-foreground">Waiting to be claimed</p>
+              <div className="text-xl md:text-2xl font-bold">{stats.foundItems}</div>
+              <p className="text-xs text-muted-foreground">Total active</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">My Lost Items</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs sm:text-sm font-medium">My Lost</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.myLostItems}</div>
+              <div className="text-xl md:text-2xl font-bold">{stats.myLostItems}</div>
               <p className="text-xs text-muted-foreground">Your reports</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">My Found Items</CardTitle>
-              <Plus className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs sm:text-sm font-medium">My Found</CardTitle>
+              <Plus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.myFoundItems}</div>
-              <p className="text-xs text-muted-foreground">Your submissions</p>
+              <div className="text-xl md:text-2xl font-bold">{stats.myFoundItems}</div>
+              <p className="text-xs text-muted-foreground">Your finds</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:gap-6 sm:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Report Lost Item</CardTitle>
@@ -131,16 +131,16 @@ const Dashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Browse Lost Items</CardTitle>
-              <CardDescription>
-                Check if someone has found your lost item.
+              <CardTitle className="text-lg md:text-xl">View Your Matches</CardTitle>
+              <CardDescription className="text-sm">
+                See potential matches for items you've reported as found.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full">
                 <Link to="/browse-lost">
                   <Search className="mr-2 h-4 w-4" />
-                  Browse Lost Items
+                  View Lost Item Matches
                 </Link>
               </Button>
             </CardContent>
@@ -148,16 +148,16 @@ const Dashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Browse Found Items</CardTitle>
-              <CardDescription>
-                See if someone has reported finding your item.
+              <CardTitle className="text-lg md:text-xl">View Your Matches</CardTitle>
+              <CardDescription className="text-sm">
+                See potential matches for items you've reported as lost.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full">
                 <Link to="/browse-found">
                   <Package className="mr-2 h-4 w-4" />
-                  Browse Found Items
+                  View Found Item Matches
                 </Link>
               </Button>
             </CardContent>

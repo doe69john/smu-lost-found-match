@@ -107,7 +107,7 @@ const ReportFound = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container py-8 max-w-2xl">
+      <main className="container py-4 md:py-8 max-w-2xl px-4">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
@@ -115,13 +115,13 @@ const ReportFound = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Report Found Item</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl md:text-2xl">Report Found Item</CardTitle>
+            <CardDescription className="text-sm md:text-base">
               Help reunite someone with their lost item. Provide as much detail as possible.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>

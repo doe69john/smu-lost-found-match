@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: 'https://smu-lost-found-match.lovable.app/',
         data: {
           full_name: fullName,
         },
