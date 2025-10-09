@@ -47,9 +47,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    // Validate SMU email
-    if (!email.endsWith('@smu.edu.sg')) {
-      return { error: { message: 'Please use a valid SMU email address (@smu.edu.sg)' } };
+    // Validate SMU email - accepts both @smu.edu.sg and @*.smu.edu.sg
+    const smuEmailPattern = /@([a-z]+\.)?smu\.edu\.sg$/i;
+    if (!smuEmailPattern.test(email)) {
+      return { error: { message: 'Please use a valid SMU email address (e.g., @smu.edu.sg or @computing.smu.edu.sg)' } };
     }
 
     const { error } = await supabase.auth.signUp({

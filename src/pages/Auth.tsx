@@ -9,8 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
-  email: z.string().email().refine(email => email.endsWith('@smu.edu.sg'), {
-    message: 'Please use a valid SMU email address (@smu.edu.sg)',
+  email: z.string().email().refine(email => /@([a-z]+\.)?smu\.edu\.sg$/i.test(email), {
+    message: 'Please use a valid SMU email address (e.g., @smu.edu.sg or @computing.smu.edu.sg)',
   }),
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -117,7 +117,7 @@ const Auth = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="student@smu.edu.sg"
+                placeholder="student@smu.edu.sg or student@computing.smu.edu.sg"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
