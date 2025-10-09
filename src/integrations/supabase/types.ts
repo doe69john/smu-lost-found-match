@@ -14,7 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      found_items: {
+        Row: {
+          brand: string | null
+          category: string
+          color: string | null
+          created_at: string
+          date_found: string
+          description: string
+          id: string
+          image_url: string | null
+          location_found: string
+          model: string | null
+          status: string
+          time_found: string | null
+          unique_features: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          color?: string | null
+          created_at?: string
+          date_found: string
+          description: string
+          id?: string
+          image_url?: string | null
+          location_found: string
+          model?: string | null
+          status?: string
+          time_found?: string | null
+          unique_features?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          color?: string | null
+          created_at?: string
+          date_found?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          location_found?: string
+          model?: string | null
+          status?: string
+          time_found?: string | null
+          unique_features?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      lost_items: {
+        Row: {
+          brand: string | null
+          category: string
+          color: string | null
+          created_at: string
+          date_lost: string
+          description: string
+          id: string
+          image_url: string | null
+          location_lost: string
+          model: string | null
+          status: string
+          time_lost: string | null
+          unique_features: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          color?: string | null
+          created_at?: string
+          date_lost: string
+          description: string
+          id?: string
+          image_url?: string | null
+          location_lost: string
+          model?: string | null
+          status?: string
+          time_lost?: string | null
+          unique_features?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          color?: string | null
+          created_at?: string
+          date_lost?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          location_lost?: string
+          model?: string | null
+          status?: string
+          time_lost?: string | null
+          unique_features?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          found_item_id: string
+          id: string
+          lost_item_id: string
+          status: string
+        }
+        Insert: {
+          confidence_score: number
+          created_at?: string
+          found_item_id: string
+          id?: string
+          lost_item_id: string
+          status?: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          found_item_id?: string
+          id?: string
+          lost_item_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_found_item_id_fkey"
+            columns: ["found_item_id"]
+            isOneToOne: false
+            referencedRelation: "found_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_lost_item_id_fkey"
+            columns: ["lost_item_id"]
+            isOneToOne: false
+            referencedRelation: "lost_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          phone_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
