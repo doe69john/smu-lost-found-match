@@ -21,6 +21,10 @@ function normalizePostgrestError(data) {
 function normalizeAuthError(data) {
   if (!data) return null
 
+  if (data.msg) {
+    return data.msg
+  }
+
   if (data.error_description) {
     return data.error_description
   }
@@ -31,6 +35,10 @@ function normalizeAuthError(data) {
 
   if (data.error) {
     return data.error
+  }
+
+  if (data.message) {
+    return data.message
   }
 
   return null
