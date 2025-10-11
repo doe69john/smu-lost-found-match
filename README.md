@@ -1,73 +1,63 @@
-# Welcome to your Lovable project
+# Lost & Found UI System
 
-## Project info
+This project uses Vue 3 + Vite with a Bootstrap-first design system. Shared components live under `src/components/ui` and rely on a custom Bootstrap theme defined with CSS variables.
 
-**URL**: https://lovable.dev/projects/92fdc393-e021-48f6-bfe4-91cc7117154c
+## Getting started
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/92fdc393-e021-48f6-bfe4-91cc7117154c) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Design system
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Bootstrap theme
 
-**Use GitHub Codespaces**
+Customizations are defined in `src/assets/index.css`. The file imports Bootstrap's compiled CSS, overrides its CSS variables (brand colors, typography, border radius), and adds utility classes shared across the application. Importing the stylesheet in `src/main.js` automatically applies the theme.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+To extend the theme, update or append variables and utility classes in `index.css`. Because the overrides piggyback on Bootstrap's design tokens, you get predictable styling without maintaining a Sass toolchain.
 
-## What technologies are used for this project?
+### UI components
 
-This project is built with:
+Reusable Single File Components are available under `src/components/ui/`:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `Button.vue` – wraps Bootstrap buttons with variant, size, loading, and icon support.
+- `Input.vue` – accessible text, email, password, and numeric inputs with description, validation, and floating-label modes.
+- `Select.vue` – enhanced select element that supports options arrays, multiple selection, and validation messaging.
+- `Card.vue` – Bootstrap card shell with optional header/footer slots and Lucide icon integration.
+- `Modal.vue` – controlled modal dialog with backdrop management and slot-based header/body/footer sections.
 
-## How can I deploy this project?
+Import them directly or through `src/components/ui/index.js`.
 
-Simply open [Lovable](https://lovable.dev/projects/92fdc393-e021-48f6-bfe4-91cc7117154c) and click on Share -> Publish.
+```vue
+<script setup>
+import { UiButton } from '@/components/ui'
+import { Plus } from 'lucide-vue-next'
+</script>
 
-## Can I connect a custom domain to my Lovable project?
+<template>
+  <UiButton :icon="Plus">Create item</UiButton>
+</template>
+```
 
-Yes, you can!
+### Icons
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+The project standardizes on [lucide-vue-next](https://www.npmjs.com/package/lucide-vue-next) for icons. Import the icons you need and pass them to UI components via the `icon` prop or dedicated slots. This keeps bundle sizes lean and avoids shipping unused icon sets.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```vue
+<script setup>
+import { Search } from 'lucide-vue-next'
+import { UiButton } from '@/components/ui'
+</script>
+
+<template>
+  <UiButton variant="outline" :icon="Search">Search reports</UiButton>
+</template>
+```
+
+## Linting & formatting
+
+```bash
+npm run lint
+npm run format
+```

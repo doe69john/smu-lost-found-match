@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Lost and Found Vue Icon</title>
+  <rect width="64" height="64" rx="12" fill="#2c3e50" />
+  <path d="M32 15.5c-7.4 0-13.4 6-13.4 13.4 0 5.1 2.8 9.6 7 11.9l6.4 3.4 6.4-3.4c4.2-2.3 7-6.8 7-11.9 0-7.4-6-13.4-13.4-13.4zm0 7.2a6.2 6.2 0 110 12.4 6.2 6.2 0 010-12.4z" fill="#42b883" />
+  <path d="M32 41.8l-8.3 4.4a2 2 0 00-.9 2.7l1.6 3.2c.6 1.3 2 1.8 3.3 1.1l4.3-2.2 4.3 2.2c1.3.7 2.8.2 3.3-1.1l1.6-3.2a2 2 0 00-.9-2.7z" fill="#35495e" />
+</svg>
