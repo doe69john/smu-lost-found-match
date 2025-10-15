@@ -1,5 +1,5 @@
 {
-  "name": "smu-lost-found-match",
+  "name": "smulostandfound",
   "compatibility_date": "2024-05-30",
   "assets": {
     "directory": "./dist"
