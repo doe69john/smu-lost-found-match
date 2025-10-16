@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+import { emitSessionExpired } from './sessionManager'
+
 const DEFAULT_SUPABASE_URL = 'https://oxubfeizhswsrczchtkr.supabase.co'
 const DEFAULT_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94dWJmZWl6aHN3c3JjemNodGtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwMTkxMjQsImV4cCI6MjA3NTU5NTEyNH0.4ddHb2caQRrkO01b2eE3tAL-gVQAdxTOAiXTWk_mTxU'
@@ -73,5 +75,21 @@ httpClient.interceptors.request.use((config) => {
 
   return config
 })
+
+httpClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status
+    const requestUrl = error.config?.url || ''
+
+    const isAuthRequest = /\/auth\/v1\/(token|signup|logout)/.test(requestUrl)
+
+    if ((status === 401 || status === 419) && !isAuthRequest) {
+      emitSessionExpired({ reason: status === 419 ? 'session-timeout' : 'expired' })
+    }
+
+    return Promise.reject(error)
+  }
+)
 
 export default httpClient

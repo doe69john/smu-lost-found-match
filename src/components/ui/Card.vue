@@ -36,12 +36,17 @@ const props = defineProps({
   }
 })
 
-const bodyClasses = computed(() => [props.flush ? '' : 'card-body', props.bodyClass].filter(Boolean).join(' '))
+const bodyClasses = computed(
+  () =>
+    [props.flush ? '' : 'card-body', 'ui-card__body', props.bodyClass]
+      .filter(Boolean)
+      .join(' ')
+)
 </script>
 
 <template>
-  <div class="card border-0 shadow-sm" v-bind="$attrs">
-    <header v-if="$slots.header || title" :class="['card-header bg-white border-0', headerClass]">
+  <div class="card ui-card transition-base" v-bind="$attrs">
+    <header v-if="$slots.header || title" :class="['card-header ui-card__header border-0', headerClass]">
       <slot name="header">
         <div class="d-flex align-items-start gap-3">
           <component
@@ -67,7 +72,7 @@ const bodyClasses = computed(() => [props.flush ? '' : 'card-body', props.bodyCl
       <slot />
     </section>
 
-    <footer v-if="$slots.footer" :class="['card-footer bg-white border-0', footerClass]">
+    <footer v-if="$slots.footer" :class="['card-footer ui-card__footer border-0', footerClass]">
       <slot name="footer" />
     </footer>
   </div>

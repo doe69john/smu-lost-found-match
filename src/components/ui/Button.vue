@@ -1,5 +1,7 @@
 <script setup>
 import { computed, useSlots } from 'vue'
+import PulseLoader from '@/components/common/PulseLoader.vue'
+import { useLoadingDelay } from '@/composables/useLoadingDelay'
 
 defineOptions({
   name: 'UiButton'
@@ -23,6 +25,8 @@ const sizeClasses = {
   md: '',
   lg: 'btn-lg'
 }
+
+const invertedVariantSet = new Set(['primary', 'secondary', 'success', 'danger', 'dark', 'info'])
 
 const props = defineProps({
   variant: {
@@ -66,7 +70,7 @@ const slots = useSlots()
 const hasText = computed(() => Boolean(slots.default))
 
 const classes = computed(() => {
-  const classes = ['btn']
+  const classes = ['btn', 'ui-button', 'transition-base', 'transition-lift', 'transition-press']
   const variantClass = variantClasses[props.variant] || `btn-${props.variant}`
   classes.push(variantClass)
 
@@ -92,6 +96,34 @@ const classes = computed(() => {
 
 const isDisabled = computed(() => props.disabled || props.loading)
 
+const loaderSize = computed(() => {
+  if (props.size === 'sm' || props.iconOnly) {
+    return 'sm'
+  }
+  if (props.size === 'lg') {
+    return 'lg'
+  }
+  return 'md'
+})
+
+const loaderContrast = computed(() => {
+  if (props.variant.startsWith('outline')) {
+    return 'accent'
+  }
+
+  if (invertedVariantSet.has(props.variant)) {
+    return 'inverted'
+  }
+
+  if (props.variant === 'light' || props.variant === 'warning') {
+    return 'muted'
+  }
+
+  return 'default'
+})
+
+const { isVisible: showLoader } = useLoadingDelay(() => props.loading)
+
 const handleClick = (event) => {
   if (isDisabled.value) {
     event.preventDefault()
@@ -112,12 +144,13 @@ const handleClick = (event) => {
     v-bind="$attrs"
     @click="handleClick"
   >
-    <span
-      v-if="loading"
-      class="spinner-border spinner-border-sm me-2"
-      role="status"
+    <PulseLoader
+      v-if="showLoader"
+      :size="loaderSize"
+      :contrast="loaderContrast"
+      :class="{ 'me-2': hasText }"
       aria-hidden="true"
-    ></span>
+    />
 
     <component
       :is="icon"

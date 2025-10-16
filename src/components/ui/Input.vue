@@ -92,13 +92,13 @@ const handleFocus = (event) => {
 </script>
 
 <template>
-  <div :class="floatingLabel ? 'form-floating' : 'd-grid gap-1'">
+  <div :class="floatingLabel ? 'form-floating' : 'form-field'">
     <template v-if="floatingLabel">
       <input
         :id="inputId"
         :value="modelValue"
         :type="type"
-        :class="['form-control', stateClass].filter(Boolean).join(' ')"
+        :class="['form-control', 'ui-input', 'transition-base', stateClass].filter(Boolean).join(' ')"
         :placeholder="floatingPlaceholder"
         :required="required"
         :aria-describedby="describedBy"
@@ -122,7 +122,7 @@ const handleFocus = (event) => {
         :id="inputId"
         :value="modelValue"
         :type="type"
-        :class="['form-control', stateClass].filter(Boolean).join(' ')"
+        :class="['form-control', 'ui-input', 'transition-base', stateClass].filter(Boolean).join(' ')"
         :required="required"
         :aria-describedby="describedBy"
         :aria-invalid="state === 'invalid' ? 'true' : undefined"

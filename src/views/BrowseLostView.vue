@@ -1,5 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import PulseLoader from '@/components/common/PulseLoader.vue'
+import { useLoadingDelay } from '@/composables/useLoadingDelay'
 import { fetchLostItems } from '../services/lostItemsService'
 import { pushToast } from '../composables/useToast'
 
@@ -24,6 +26,7 @@ const items = ref([])
 const totalCount = ref(0)
 const page = ref(1)
 const isLoading = ref(false)
+const { isVisible: showLoadMoreLoader } = useLoadingDelay(isLoading)
 const errorMessage = ref('')
 const isInitialLoad = ref(true)
 
@@ -200,12 +203,7 @@ watch(
 
       <div class="d-flex justify-content-center mt-4" v-if="hasMore">
         <button type="button" class="btn btn-outline-primary" :disabled="isLoading" @click="loadItems()">
-          <span
-            v-if="isLoading"
-            class="spinner-border spinner-border-sm me-2"
-            role="status"
-            aria-hidden="true"
-          ></span>
+          <PulseLoader v-if="showLoadMoreLoader" size="sm" class="me-2" aria-hidden="true" />
           {{ isLoading ? 'Loading more…' : 'Load more results' }}
         </button>
       </div>

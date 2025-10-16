@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 import { pushToast } from '../../composables/useToast'
@@ -10,11 +10,13 @@ const route = useRoute()
 
 const navigation = [
   { name: 'Dashboard', path: '/dashboard' },
-  { name: 'Report Lost', path: '/report-lost' },
-  { name: 'Report Found', path: '/report-found' },
   { name: 'Browse Lost', path: '/browse-lost' },
-  { name: 'Browse Found', path: '/browse-found' }
+  { name: 'Browse Found', path: '/browse-found' },
+  { name: 'I Lost My Item', path: '/report-lost', cta: true },
+  { name: 'I Found an Item', path: '/report-found', cta: true }
 ]
+
+const CTA_PATHS = ['/report-lost', '/report-found']
 
 const activePath = computed(() => route.path)
 const isLoggedIn = computed(() => authStatus.value)
@@ -26,6 +28,25 @@ const displayName = computed(
     'Member'
 )
 
+const primaryLinks = computed(() => navigation.filter((link) => !CTA_PATHS.includes(link.path)))
+const ctaLinks = computed(() => navigation.filter((link) => CTA_PATHS.includes(link.path)))
+
+const isAuthRoute = computed(() => ['auth', 'auth-signup'].includes(route.name))
+
+const isMenuOpen = ref(false)
+
+const toggleMenu = () => {
+  if (isAuthRoute.value) {
+    return
+  }
+
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+const closeMenu = () => {
+  isMenuOpen.value = false
+}
+
 const buildRedirectQuery = () => {
   if (['auth', 'auth-signup', 'not-found'].includes(route.name)) {
     return undefined
@@ -35,72 +56,156 @@ const buildRedirectQuery = () => {
 }
 
 const handleGoToSignIn = () => {
+  closeMenu()
   const query = buildRedirectQuery()
   router.push(query ? { name: 'auth', query } : { name: 'auth' })
 }
 
 const handleGoToSignUp = () => {
+  closeMenu()
   const query = buildRedirectQuery()
   router.push(query ? { name: 'auth-signup', query } : { name: 'auth-signup' })
 }
 
 const handleLogout = async () => {
+  closeMenu()
   await logout()
   pushToast({ title: 'Signed out', message: 'You have been logged out.', variant: 'info' })
   router.push({ name: 'auth' })
 }
+
+watch(
+  () => route.fullPath,
+  () => {
+    closeMenu()
+  }
+)
+
+watch(
+  () => isAuthRoute.value,
+  (isAuth) => {
+    if (isAuth) {
+      closeMenu()
+    }
+  }
+)
 </script>
 
 <template>
-  <header class="bg-primary text-white shadow-sm">
-    <div class="container py-3">
-      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-        <RouterLink class="text-white text-decoration-none fs-4 fw-semibold" to="/">
+  <header class="app-header">
+    <div class="app-header__bar">
+      <div class="app-header__brand">
+        <RouterLink class="app-header__logo" to="/">
           Lost &amp; Found Portal
         </RouterLink>
+      </div>
 
-        <nav v-if="isLoggedIn" class="d-flex flex-wrap gap-3 align-items-center">
+      <nav v-if="isLoggedIn && !isAuthRoute" class="app-header__nav">
+        <RouterLink
+          v-for="link in primaryLinks"
+          :key="link.path"
+          class="app-header__link"
+          :class="{ 'is-active': activePath === link.path }"
+          :to="link.path"
+        >
+          {{ link.name }}
+        </RouterLink>
+      </nav>
+
+      <div v-if="!isAuthRoute" class="app-header__cta-group">
+        <RouterLink
+          v-for="(link, index) in ctaLinks"
+          :key="link.path"
+          class="app-header__cta-button"
+          :class="{ 'app-header__cta-button--outline': index === 1 }"
+          :to="link.path"
+        >
+          {{ link.name }}
+        </RouterLink>
+      </div>
+
+      <div v-if="!isAuthRoute" class="app-header__auth">
+        <div v-if="isLoggedIn" class="app-header__identity">
+          Signed in as <strong>{{ displayName }}</strong>
+        </div>
+
+        <div v-if="!isLoggedIn" class="d-flex align-items-center gap-2">
+          <button type="button" class="app-header__ghost-button" @click="handleGoToSignIn">
+            Sign in
+          </button>
+          <button type="button" class="app-header__solid-button" @click="handleGoToSignUp">
+            Sign up
+          </button>
+        </div>
+
+        <button v-else type="button" class="app-header__solid-button" @click="handleLogout">
+          Sign out
+        </button>
+      </div>
+
+      <button
+        v-if="!isAuthRoute"
+        class="app-header__toggle transition-base"
+        type="button"
+        aria-controls="app-mobile-menu"
+        :aria-expanded="isMenuOpen ? 'true' : 'false'"
+        @click="toggleMenu"
+      >
+        <span></span>
+      </button>
+    </div>
+
+    <Transition name="drawer-fade">
+      <div v-if="!isAuthRoute && isMenuOpen" class="app-header__overlay" @click="closeMenu"></div>
+    </Transition>
+
+    <Transition name="drawer-slide">
+      <nav
+        v-if="!isAuthRoute && isMenuOpen"
+        id="app-mobile-menu"
+        class="app-header__drawer"
+        aria-label="Mobile navigation"
+      >
+        <div v-if="isLoggedIn" class="app-header__drawer-nav">
           <RouterLink
-            v-for="link in navigation"
-            :key="link.path"
-            class="text-white text-decoration-none"
-            :class="{ 'fw-semibold text-decoration-underline': activePath === link.path }"
+            v-for="link in primaryLinks"
+            :key="`drawer-${link.path}`"
+            class="app-header__drawer-link"
+            :class="{ 'is-active': activePath === link.path }"
             :to="link.path"
+            @click="closeMenu"
           >
             {{ link.name }}
           </RouterLink>
-        </nav>
+        </div>
 
-        <div class="d-flex align-items-center gap-3 ms-md-3">
-          <div v-if="isLoggedIn" class="text-white-50 small">
-            Signed in as <strong class="text-white">{{ displayName }}</strong>
-          </div>
-          <div v-if="!isLoggedIn" class="d-flex align-items-center gap-2">
-            <button
-              type="button"
-              class="btn btn-outline-light btn-sm"
-              @click="handleGoToSignIn"
-            >
+        <div class="app-header__drawer-cta">
+          <RouterLink
+            v-for="(link, index) in ctaLinks"
+            :key="`cta-${link.path}`"
+            class="app-header__cta-button"
+            :class="{ 'app-header__cta-button--outline': index === 1 }"
+            :to="link.path"
+            @click="closeMenu"
+          >
+            {{ link.name }}
+          </RouterLink>
+        </div>
+
+        <div class="app-header__drawer-auth">
+          <template v-if="!isLoggedIn">
+            <button type="button" class="app-header__ghost-button" @click="handleGoToSignIn">
               Sign in
             </button>
-            <button
-              type="button"
-              class="btn btn-light btn-sm text-primary"
-              @click="handleGoToSignUp"
-            >
+            <button type="button" class="app-header__solid-button" @click="handleGoToSignUp">
               Sign up
             </button>
-          </div>
-          <button
-            v-else
-            type="button"
-            class="btn btn-light btn-sm text-primary"
-            @click="handleLogout"
-          >
+          </template>
+          <button v-else type="button" class="app-header__solid-button" @click="handleLogout">
             Sign out
           </button>
         </div>
-      </div>
-    </div>
+      </nav>
+    </Transition>
   </header>
 </template>

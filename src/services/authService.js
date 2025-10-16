@@ -37,6 +37,24 @@ function clearSession() {
   }
 }
 
+function computeExpiration(session) {
+  if (!session) return null
+
+  if (session.expires_at) {
+    return session.expires_at
+  }
+
+  if (session.expiresAt) {
+    return session.expiresAt
+  }
+
+  if (session.expires_in) {
+    return Math.floor(Date.now() / 1000 + session.expires_in)
+  }
+
+  return null
+}
+
 function extractSession(payload) {
   if (!payload) return null
 
@@ -59,7 +77,8 @@ export async function signIn({ email, password }) {
 
     const session = extractSession(data)
     if (session?.access_token) {
-      persistSession(session)
+      const persisted = persistSession({ ...session, expires_at: computeExpiration(session) })
+      return persisted
     }
 
     return session
@@ -83,7 +102,8 @@ export async function signUp({ email, password, data = {} }) {
 
     const session = extractSession(response.data)
     if (session?.access_token) {
-      persistSession(session)
+      const persisted = persistSession({ ...session, expires_at: computeExpiration(session) })
+      return persisted
     }
 
     return response.data
@@ -129,7 +149,11 @@ export function getCurrentSession() {
 export function loadSessionFromStorage() {
   const session = getSessionFromStorage()
   if (session?.access_token) {
-    persistSession(session)
+    persistSession({ ...session, expires_at: computeExpiration(session) })
   }
   return session
+}
+
+export function clearPersistedSession() {
+  clearSession()
 }
