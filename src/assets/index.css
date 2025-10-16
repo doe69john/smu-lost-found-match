@@ -409,6 +409,7 @@ small,
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  margin-right: auto;
 }
 
 .app-header__logo {
@@ -436,6 +437,7 @@ small,
   color: var(--color-secondary);
   box-shadow: var(--shadow-xs);
   position: relative;
+  margin-left: var(--space-md);
 }
 
 .app-header__toggle span,
@@ -528,35 +530,35 @@ small,
   align-items: center;
   justify-content: center;
   gap: var(--space-xs);
-  padding: 0.65rem 1.35rem;
-  border-radius: var(--radius-md);
+  padding: 0.45rem 1.05rem;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.24);
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--color-primary-700);
   font-weight: 600;
-  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-500));
-  color: var(--text-inverse);
-  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.01em;
   transition: transform var(--transition-medium) var(--transition-timing),
-    box-shadow var(--transition-medium) var(--transition-timing);
+    box-shadow var(--transition-medium) var(--transition-timing),
+    background var(--transition-medium) var(--transition-timing),
+    border-color var(--transition-medium) var(--transition-timing);
 }
 
 .app-header__cta-button:hover,
 .app-header__cta-button:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-glow);
-  color: var(--text-inverse);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.42);
 }
 
 .app-header__cta-button--outline {
-  background: transparent;
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  color: var(--color-primary-600);
-  box-shadow: none;
+  background: var(--surface-base);
+  color: var(--color-secondary);
 }
 
 .app-header__cta-button--outline:hover,
 .app-header__cta-button--outline:focus-visible {
-  color: var(--text-inverse);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1));
-  box-shadow: var(--shadow-sm);
+  background: rgba(148, 163, 184, 0.18);
 }
 
 .app-header__auth {
@@ -624,16 +626,14 @@ small,
 .app-header__drawer {
   position: fixed;
   top: calc(var(--space-lg) + 3.5rem);
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(calc(100% - 2 * var(--layout-gutter)), 420px);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  right: var(--layout-gutter);
+  width: min(360px, calc(100% - 2 * var(--layout-gutter)));
+  background: var(--surface-base);
+  border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl);
   padding: var(--space-lg);
   z-index: 1001;
-  backdrop-filter: blur(var(--glass-blur));
   display: grid;
   gap: var(--space-md);
   max-height: calc(100vh - 2 * var(--space-2xl));
@@ -648,19 +648,26 @@ small,
 }
 
 .app-header__drawer-link {
-  padding: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
   font-weight: 600;
-  color: var(--color-tertiary);
-  background: rgba(148, 163, 184, 0.08);
+  color: var(--color-secondary);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(148, 163, 184, 0.12);
   transition: background var(--transition-medium) var(--transition-timing),
-    transform var(--transition-medium) var(--transition-timing);
+    transform var(--transition-medium) var(--transition-timing),
+    border-color var(--transition-medium) var(--transition-timing);
 }
 
 .app-header__drawer-link.is-active,
 .app-header__drawer-link:hover,
 .app-header__drawer-link:focus-visible {
-  background: rgba(99, 102, 241, 0.14);
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.42);
   color: var(--color-primary-700);
   transform: translateY(-2px);
 }
@@ -668,6 +675,8 @@ small,
 .app-header__drawer-cta .app-header__cta-button {
   width: 100%;
   justify-content: center;
+  padding-block: 0.75rem;
+  border-radius: var(--radius-md);
 }
 
 .app-header__drawer-auth button,

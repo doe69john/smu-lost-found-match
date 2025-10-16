@@ -10,10 +10,10 @@ const route = useRoute()
 
 const navigation = [
   { name: 'Dashboard', path: '/dashboard' },
-  { name: 'Report Lost', path: '/report-lost' },
-  { name: 'Report Found', path: '/report-found' },
   { name: 'Browse Lost', path: '/browse-lost' },
-  { name: 'Browse Found', path: '/browse-found' }
+  { name: 'Browse Found', path: '/browse-found' },
+  { name: 'I Lost My Item', path: '/report-lost', cta: true },
+  { name: 'I Found an Item', path: '/report-found', cta: true }
 ]
 
 const CTA_PATHS = ['/report-lost', '/report-found']
@@ -31,9 +31,15 @@ const displayName = computed(
 const primaryLinks = computed(() => navigation.filter((link) => !CTA_PATHS.includes(link.path)))
 const ctaLinks = computed(() => navigation.filter((link) => CTA_PATHS.includes(link.path)))
 
+const isAuthRoute = computed(() => ['auth', 'auth-signup'].includes(route.name))
+
 const isMenuOpen = ref(false)
 
 const toggleMenu = () => {
+  if (isAuthRoute.value) {
+    return
+  }
+
   isMenuOpen.value = !isMenuOpen.value
 }
 
@@ -74,6 +80,15 @@ watch(
     closeMenu()
   }
 )
+
+watch(
+  () => isAuthRoute.value,
+  (isAuth) => {
+    if (isAuth) {
+      closeMenu()
+    }
+  }
+)
 </script>
 
 <template>
@@ -85,17 +100,7 @@ watch(
         </RouterLink>
       </div>
 
-      <button
-        class="app-header__toggle transition-base"
-        type="button"
-        aria-controls="app-mobile-menu"
-        :aria-expanded="isMenuOpen ? 'true' : 'false'"
-        @click="toggleMenu"
-      >
-        <span></span>
-      </button>
-
-      <nav v-if="isLoggedIn" class="app-header__nav">
+      <nav v-if="isLoggedIn && !isAuthRoute" class="app-header__nav">
         <RouterLink
           v-for="link in primaryLinks"
           :key="link.path"
@@ -107,7 +112,7 @@ watch(
         </RouterLink>
       </nav>
 
-      <div class="app-header__cta-group">
+      <div v-if="!isAuthRoute" class="app-header__cta-group">
         <RouterLink
           v-for="(link, index) in ctaLinks"
           :key="link.path"
@@ -119,7 +124,7 @@ watch(
         </RouterLink>
       </div>
 
-      <div class="app-header__auth">
+      <div v-if="!isAuthRoute" class="app-header__auth">
         <div v-if="isLoggedIn" class="app-header__identity">
           Signed in as <strong>{{ displayName }}</strong>
         </div>
@@ -137,14 +142,30 @@ watch(
           Sign out
         </button>
       </div>
+
+      <button
+        v-if="!isAuthRoute"
+        class="app-header__toggle transition-base"
+        type="button"
+        aria-controls="app-mobile-menu"
+        :aria-expanded="isMenuOpen ? 'true' : 'false'"
+        @click="toggleMenu"
+      >
+        <span></span>
+      </button>
     </div>
 
     <Transition name="drawer-fade">
-      <div v-if="isMenuOpen" class="app-header__overlay" @click="closeMenu"></div>
+      <div v-if="!isAuthRoute && isMenuOpen" class="app-header__overlay" @click="closeMenu"></div>
     </Transition>
 
     <Transition name="drawer-slide">
-      <nav v-if="isMenuOpen" id="app-mobile-menu" class="app-header__drawer" aria-label="Mobile navigation">
+      <nav
+        v-if="!isAuthRoute && isMenuOpen"
+        id="app-mobile-menu"
+        class="app-header__drawer"
+        aria-label="Mobile navigation"
+      >
         <div v-if="isLoggedIn" class="app-header__drawer-nav">
           <RouterLink
             v-for="link in primaryLinks"
