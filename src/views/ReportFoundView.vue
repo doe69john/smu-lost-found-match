@@ -262,8 +262,8 @@ const wizardSteps = computed(() => [
   },
   {
     id: 'location',
-    title: 'Pickup location',
-    description: 'Where the item can be found',
+    title: 'Where you found it',
+    description: 'Share the exact location',
     beforeNext: validateLocationStep
   },
   {
@@ -434,7 +434,7 @@ async function onSubmit(values, { resetForm }) {
                       />
                     </label>
                   </div>
-                  <small class="text-muted">{{ remainingImages }} slot(s) remaining</small>
+                  <small class="text-muted">{{ remainingImages }} picture(s) remaining</small>
                 </div>
               </div>
 
@@ -471,7 +471,14 @@ async function onSubmit(values, { resetForm }) {
                         </button>
                       </div>
                     </div>
-                    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="entry.progress">
+                    <div
+                      v-if="isSubmitting || (entry.progress > 0 && entry.progress < 100)"
+                      class="progress"
+                      role="progressbar"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      :aria-valuenow="entry.progress"
+                    >
                       <div
                         class="progress-bar"
                         :class="{ 'progress-bar-striped progress-bar-animated': isSubmitting && entry.progress < 100 }"
@@ -499,7 +506,7 @@ async function onSubmit(values, { resetForm }) {
             <div v-else-if="step?.id === 'basics'" class="row g-3">
               <div class="col-12">
                 <label class="form-label" for="found-title">Item title *</label>
-                <Field name="title" v-slot="{ field, errorMessage }">
+                <Field name="title" :keep-value="true" v-slot="{ field, errorMessage }">
                   <input
                     id="found-title"
                     type="text"
@@ -515,7 +522,7 @@ async function onSubmit(values, { resetForm }) {
 
               <div class="col-12 col-md-6">
                 <label class="form-label" for="found-category">Category *</label>
-                <Field name="category" v-slot="{ field, errorMessage }">
+                <Field name="category" :keep-value="true" v-slot="{ field, errorMessage }">
                   <select
                     id="found-category"
                     class="form-select"
@@ -534,7 +541,7 @@ async function onSubmit(values, { resetForm }) {
 
               <div class="col-12 col-md-6">
                 <label class="form-label" for="found-brand">Brand</label>
-                <Field name="brand" v-slot="{ field, errorMessage }">
+                <Field name="brand" :keep-value="true" v-slot="{ field, errorMessage }">
                   <input
                     id="found-brand"
                     type="text"
@@ -550,7 +557,7 @@ async function onSubmit(values, { resetForm }) {
 
               <div class="col-12 col-md-6">
                 <label class="form-label" for="found-color">Color</label>
-                <Field name="color" v-slot="{ field, errorMessage }">
+                <Field name="color" :keep-value="true" v-slot="{ field, errorMessage }">
                   <input
                     id="found-color"
                     type="text"
@@ -566,25 +573,26 @@ async function onSubmit(values, { resetForm }) {
             </div>
 
             <div v-else-if="step?.id === 'location'" class="d-grid gap-3">
-              <Field name="location_found" v-slot="{ field, errorMessage }">
+              <Field name="location_found" :keep-value="true" v-slot="{ field, errorMessage }">
                 <div>
-                  <label class="form-label" for="found-location">Where is the item now? *</label>
+                  <label class="form-label" for="found-location">Where did you find the item? *</label>
                   <textarea
                     id="found-location"
                     rows="3"
                     class="form-control"
                     :class="{ 'is-invalid': errorMessage }"
-                    placeholder="Be as specific as possible (e.g. Building A, lobby desk)"
+                    placeholder="Be as specific as possible (e.g. Building A, Level 2 seminar room)"
                     v-bind="field"
                     :disabled="isSubmitting"
                   ></textarea>
                   <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                  <small class="text-muted">Please give the exact location, including the building and room.</small>
                 </div>
               </Field>
             </div>
 
             <div v-else-if="step?.id === 'details'" class="d-grid gap-3">
-              <Field name="description" v-slot="{ field, errorMessage }">
+              <Field name="description" :keep-value="true" v-slot="{ field, errorMessage }">
                 <div>
                   <label class="form-label" for="found-description">Describe the item *</label>
                   <textarea
@@ -600,7 +608,7 @@ async function onSubmit(values, { resetForm }) {
                 </div>
               </Field>
 
-              <Field name="unique_features" v-slot="{ field, errorMessage }">
+              <Field name="unique_features" :keep-value="true" v-slot="{ field, errorMessage }">
                 <div>
                   <label class="form-label" for="found-features">Unique identifiers</label>
                   <textarea
@@ -620,7 +628,7 @@ async function onSubmit(values, { resetForm }) {
             <div v-else-if="step?.id === 'timing'" class="row g-3">
               <div class="col-12 col-md-6">
                 <label class="form-label" for="found-date">Date found *</label>
-                <Field name="date_found" v-slot="{ field, errorMessage }">
+              <Field name="date_found" :keep-value="true" v-slot="{ field, errorMessage }">
                   <input
                     id="found-date"
                     type="date"
@@ -635,7 +643,7 @@ async function onSubmit(values, { resetForm }) {
 
               <div class="col-12 col-md-6">
                 <label class="form-label" for="found-time">Time found</label>
-                <Field name="time_found" v-slot="{ field, errorMessage }">
+              <Field name="time_found" :keep-value="true" v-slot="{ field, errorMessage }">
                   <input
                     id="found-time"
                     type="time"
@@ -661,7 +669,7 @@ async function onSubmit(values, { resetForm }) {
               <div class="row g-3">
                 <div class="col-12 col-md-8">
                   <label class="form-label" for="security-office">Security office</label>
-                  <Field name="drop_off_office_id" v-slot="{ field, errorMessage }">
+              <Field name="drop_off_office_id" :keep-value="true" v-slot="{ field, errorMessage }">
                     <select
                       id="security-office"
                       class="form-select"
@@ -687,7 +695,7 @@ async function onSubmit(values, { resetForm }) {
                 </div>
               </div>
 
-              <Field name="dropOffConfirmed" v-slot="{ value, handleChange, handleBlur, errorMessage }">
+              <Field name="dropOffConfirmed" :keep-value="true" v-slot="{ value, handleChange, handleBlur, errorMessage }">
                 <div>
                   <div class="form-check">
                     <input

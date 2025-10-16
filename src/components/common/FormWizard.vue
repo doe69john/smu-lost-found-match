@@ -136,30 +136,13 @@ defineExpose({
       </div>
     </div>
 
-    <ol class="wizard-steps list-unstyled d-flex flex-wrap gap-3 gap-md-4 align-items-center mb-0">
-      <li
-        v-for="(step, index) in steps"
-        :key="step.id ?? index"
-        class="wizard-step-item"
-      >
-        <button
-          type="button"
-          class="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-2"
-          :class="{
-            active: index === currentStepIndex,
-            completed: index < currentStepIndex
-          }"
-          :disabled="index > furthestVisited"
-          @click="goToStep(index)"
-        >
-          <span class="step-index rounded-circle fw-semibold">{{ index + 1 }}</span>
-          <span class="d-flex flex-column text-start">
-            <span class="step-title fw-semibold">{{ step.title }}</span>
-            <small v-if="step.description" class="text-muted">{{ step.description }}</small>
-          </span>
-        </button>
-      </li>
-    </ol>
+    <div class="wizard-step-header d-grid gap-1">
+      <div class="text-muted text-uppercase fw-semibold small">Step {{ currentStepIndex + 1 }} of {{ totalSteps }}</div>
+      <div class="d-flex flex-column flex-md-row flex-md-wrap gap-1 gap-md-2 align-items-md-center">
+        <h2 class="h5 fw-semibold mb-0">{{ currentStep?.title }}</h2>
+        <p v-if="currentStep?.description" class="text-muted mb-0">{{ currentStep.description }}</p>
+      </div>
+    </div>
 
     <div class="wizard-content position-relative">
       <Transition name="wizard-fade" mode="out-in">
@@ -192,43 +175,15 @@ defineExpose({
   transition: width 0.4s ease;
 }
 
-.wizard-step-item .btn {
-  color: inherit;
-  transition: color 0.3s ease;
-}
-
-.wizard-step-item .btn:disabled {
-  color: #adb5bd;
-}
-
-.step-index {
-  width: 2.25rem;
-  height: 2.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--bs-primary);
-  color: var(--bs-primary);
-  background: rgba(13, 110, 253, 0.08);
-  transition: all 0.3s ease;
-}
-
-.wizard-step-item .btn.completed .step-index {
-  background: var(--bs-primary);
-  color: #fff;
-}
-
-.wizard-step-item .btn.active .step-index {
-  transform: scale(1.05);
-  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
-}
-
-.step-title {
-  font-size: 0.95rem;
-}
-
 .wizard-content {
   min-height: 300px;
+}
+
+.wizard-step-header {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px -18px rgba(15, 34, 58, 0.35);
+  padding: 1.25rem 1.5rem;
 }
 
 .wizard-fade-enter-active,
@@ -252,15 +207,6 @@ defineExpose({
 @media (max-width: 576px) {
   .wizard-step-panel {
     padding: 1.25rem;
-  }
-
-  .wizard-step-item {
-    flex: 1 1 100%;
-  }
-
-  .wizard-step-item .btn {
-    width: 100%;
-    justify-content: flex-start;
   }
 }
 </style>
