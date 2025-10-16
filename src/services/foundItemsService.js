@@ -1,5 +1,6 @@
 import httpClient from './httpClient'
 import { normalizeSupabaseError } from '../utils/normalizeSupabaseError'
+import { DEFAULT_STORAGE_BUCKET } from './storageService'
 
 const FOUND_ITEMS_PATH = '/rest/v1/found_items'
 
@@ -71,9 +72,38 @@ export async function fetchFoundItemById(id, { select = '*' } = {}) {
   }
 }
 
+function normalizeFoundItemPayload(payload = {}) {
+  const normalized = { ...payload }
+
+  if (Array.isArray(payload.images)) {
+    normalized.image_metadata = payload.images.map((image) => ({
+      path: image.path,
+      original_filename: image.originalName || image.original_filename || null,
+      bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,
+      mime_type: image.mimeType || image.mime_type || null,
+      size: image.size ?? null
+    }))
+    delete normalized.images
+  }
+
+  if (Array.isArray(payload.image_metadata)) {
+    normalized.image_metadata = payload.image_metadata.map((image) => ({
+      path: image.path,
+      original_filename: image.originalName || image.original_filename || null,
+      bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,
+      mime_type: image.mimeType || image.mime_type || null,
+      size: image.size ?? null
+    }))
+  }
+
+  return normalized
+}
+
 export async function createFoundItem(payload) {
   try {
-    const { data } = await httpClient.post(FOUND_ITEMS_PATH, payload, {
+    const normalizedPayload = normalizeFoundItemPayload(payload)
+
+    const { data } = await httpClient.post(FOUND_ITEMS_PATH, normalizedPayload, {
       headers: { Prefer: 'return=representation' }
     })
 
