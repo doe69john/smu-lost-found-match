@@ -285,9 +285,12 @@ const wizardSteps = computed(() => [
 async function handleWizardComplete(submitForm) {
   if (isSubmitting.value) return
 
-  if (typeof submitForm === 'function') {
-    await submitForm()
+  if (typeof submitForm !== 'function') {
+    console.warn('VForm submit helper was not provided to handleWizardComplete')
+    return
   }
+
+  await submitForm()
 }
 
 async function onSubmit(values, { resetForm }) {
@@ -776,7 +779,7 @@ async function onSubmit(values, { resetForm }) {
                   type="button"
                   class="btn btn-primary d-inline-flex align-items-center gap-2"
                   :disabled="isSubmitting"
-                  @click="handleWizardComplete"
+                  @click="() => handleWizardComplete(submitForm)"
                 >
                   <PulseLoader v-if="showSubmitLoader" size="sm" />
                   <span>{{ isSubmitting ? 'Submitting…' : 'Submit report' }}</span>
