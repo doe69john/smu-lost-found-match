@@ -28,9 +28,25 @@ export async function createSignedUploadUrl({
       { headers }
     )
 
-    const relativeUrl = data?.url || ''
+    const rawUrl = data?.signedUrl ?? data?.url ?? ''
+    if (!rawUrl) {
+      throw new Error('Supabase did not return a signed upload URL.')
+    }
+
     const base = httpClient.defaults.baseURL?.replace(/\/$/, '') || ''
-    const absoluteUrl = new URL(relativeUrl, base)
+
+    const isAbsolute = /^https?:\/\//i.test(rawUrl)
+    const absoluteUrl = (() => {
+      if (isAbsolute) {
+        return new URL(rawUrl)
+      }
+
+      const prefixedPath = rawUrl.startsWith('/storage/v1/')
+        ? rawUrl
+        : `${STORAGE_BASE_PATH}/${rawUrl.replace(/^\/+/, '')}`
+
+      return new URL(prefixedPath, base)
+    })()
 
     const token = absoluteUrl.searchParams.get('token')
 
