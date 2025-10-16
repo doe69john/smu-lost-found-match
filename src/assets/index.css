@@ -220,7 +220,6 @@ small,
 .app-main {
   position: relative;
   flex: 1;
-  padding-block-start: calc(var(--app-header-offset) + clamp(3.5rem, 6vw, 6rem));
   padding-block-end: clamp(3.5rem, 6vw, 6rem);
   overflow: hidden;
 }
@@ -396,6 +395,7 @@ small,
   background: color-mix(in srgb, var(--surface-base) 85%, transparent);
   border-bottom: 1px solid rgba(99, 102, 241, 0.08);
   box-shadow: 0 1px 24px rgba(15, 23, 42, 0.08);
+  margin-bottom: 10px;
 }
 
 .app-header__bar {
