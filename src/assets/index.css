@@ -919,3 +919,124 @@ textarea.form-control {
     animation-iteration-count: 1 !important;
   }
 }
+
+.pulse-loader {
+  --pulse-loader-size: 1.5rem;
+  --pulse-loader-color: var(--color-primary-600);
+  --pulse-loader-glow: rgba(99, 102, 241, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pulse-loader-size);
+  height: var(--pulse-loader-size);
+  color: var(--pulse-loader-color);
+  position: relative;
+  vertical-align: middle;
+}
+
+.pulse-loader svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.pulse-loader__glow {
+  fill: currentColor;
+  opacity: 0.14;
+  transform-origin: center;
+  animation: pulse-loader-halo 1.6s ease-in-out infinite;
+}
+
+.pulse-loader__glyph {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-origin: center;
+  animation: pulse-loader-glyph 1.6s ease-in-out infinite;
+}
+
+.pulse-loader__spark {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0.65;
+  animation: pulse-loader-spark 1.6s ease-in-out infinite;
+}
+
+.pulse-loader--xs {
+  --pulse-loader-size: 0.75rem;
+}
+
+.pulse-loader--sm {
+  --pulse-loader-size: 1rem;
+}
+
+.pulse-loader--lg {
+  --pulse-loader-size: 2rem;
+}
+
+.pulse-loader--xl {
+  --pulse-loader-size: 2.5rem;
+}
+
+.pulse-loader--contrast-accent {
+  --pulse-loader-color: var(--color-primary-500);
+  --pulse-loader-glow: rgba(99, 102, 241, 0.3);
+}
+
+.pulse-loader--contrast-muted {
+  --pulse-loader-color: var(--text-muted);
+  --pulse-loader-glow: rgba(148, 163, 184, 0.28);
+}
+
+.pulse-loader--contrast-inverted {
+  --pulse-loader-color: var(--text-inverse);
+  --pulse-loader-glow: rgba(255, 255, 255, 0.32);
+}
+
+@keyframes pulse-loader-halo {
+  0%,
+  100% {
+    transform: scale(0.88);
+    opacity: 0.18;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.28;
+  }
+}
+
+@keyframes pulse-loader-glyph {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.68;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-loader-spark {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: rotate(-8deg) scale(0.95);
+  }
+  50% {
+    opacity: 0.9;
+    transform: rotate(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-loader__glow,
+  .pulse-loader__glyph,
+  .pulse-loader__spark {
+    animation-duration: 6s;
+  }
+}

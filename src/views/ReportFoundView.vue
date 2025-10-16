@@ -4,8 +4,10 @@ import { useRouter } from 'vue-router'
 import { Form as VForm, Field } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
+import PulseLoader from '@/components/common/PulseLoader.vue'
 import { useAuth } from '../composables/useAuth'
 import { pushToast } from '../composables/useToast'
+import { useLoadingDelay } from '@/composables/useLoadingDelay'
 import { createFoundItem } from '../services/foundItemsService'
 import { createSignedUploadUrl } from '../services/storageService'
 
@@ -47,6 +49,7 @@ const initialValues = {
 }
 
 const isSubmitting = ref(false)
+const { isVisible: showSubmitLoader } = useLoadingDelay(isSubmitting)
 const uploadProgress = ref(0)
 const uploadError = ref('')
 const selectedFile = ref(null)
@@ -321,12 +324,13 @@ const onSubmit = async (values, { resetForm }) => {
 
         <div class="d-flex justify-content-end mt-4">
           <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-            <span
-              v-if="isSubmitting"
-              class="spinner-border spinner-border-sm me-2"
-              role="status"
+            <PulseLoader
+              v-if="showSubmitLoader"
+              size="sm"
+              contrast="inverted"
+              class="me-2"
               aria-hidden="true"
-            ></span>
+            />
             {{ isSubmitting ? 'Submitting report...' : 'Submit report' }}
           </button>
         </div>
