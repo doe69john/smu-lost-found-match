@@ -282,17 +282,17 @@ const wizardSteps = computed(() => [
   }
 ])
 
-async function handleWizardComplete(submitForm) {
+async function handleWizardComplete(submitHandler) {
   if (import.meta.env.DEV) {
     console.debug('handleWizardComplete invoked', {
       isSubmitting: isSubmitting.value,
-      hasSubmitHelper: typeof submitForm === 'function'
+      hasSubmitHelper: typeof submitHandler === 'function'
     })
   }
 
   if (isSubmitting.value) return
 
-  if (typeof submitForm !== 'function') {
+  if (typeof submitHandler !== 'function') {
     if (import.meta.env.DEV) {
       console.warn('VForm submit helper was not provided to handleWizardComplete')
     }
@@ -301,15 +301,15 @@ async function handleWizardComplete(submitForm) {
 
   try {
     if (import.meta.env.DEV) {
-      console.debug('Invoking VeeValidate submitForm helper from handleWizardComplete')
+      console.debug('Invoking VeeValidate handleSubmit helper from handleWizardComplete')
     }
-    await submitForm()
+    await submitHandler()
     if (import.meta.env.DEV) {
-      console.debug('VeeValidate submitForm resolved without throwing')
+      console.debug('VeeValidate handleSubmit helper resolved without throwing')
     }
   } catch (error) {
     if (import.meta.env.DEV) {
-      console.error('VeeValidate submitForm rejected', error)
+      console.error('VeeValidate handleSubmit helper rejected', error)
     }
     throw error
   }
@@ -433,12 +433,12 @@ async function onSubmit(values, { resetForm }) {
       :initial-values="initialValues"
       @submit="onSubmit"
     >
-      <template #default="{ values, submitForm }">
+      <template #default="{ values, handleSubmit }">
         <FormWizard
           ref="wizardRef"
           :steps="wizardSteps"
           finish-label="Submit report"
-          @complete="() => handleWizardComplete(submitForm)"
+          @complete="() => handleWizardComplete(handleSubmit(onSubmit))"
         >
           <template #default="{ step }">
             <div v-if="step?.id === 'images'" class="d-grid gap-3">
@@ -812,7 +812,7 @@ async function onSubmit(values, { resetForm }) {
                   type="button"
                   class="btn btn-primary d-inline-flex align-items-center gap-2"
                   :disabled="isSubmitting"
-                  @click="() => handleWizardComplete(submitForm)"
+                  @click="() => handleWizardComplete(handleSubmit(onSubmit))"
                 >
                   <PulseLoader v-if="showSubmitLoader" size="sm" />
                   <span>{{ isSubmitting ? 'Submitting…' : 'Submit report' }}</span>
