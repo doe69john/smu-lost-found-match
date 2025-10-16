@@ -282,17 +282,11 @@ const wizardSteps = computed(() => [
   }
 ])
 
-async function handleWizardComplete() {
-  if (isSubmitting.value || !formRef.value) return
+async function handleWizardComplete(submitForm) {
+  if (isSubmitting.value) return
 
-  if (typeof formRef.value.submitForm === 'function') {
-    await formRef.value.submitForm()
-    return
-  }
-
-  if (typeof formRef.value.handleSubmit === 'function') {
-    const submit = formRef.value.handleSubmit(onSubmit)
-    await submit()
+  if (typeof submitForm === 'function') {
+    await submitForm()
   }
 }
 
@@ -403,12 +397,12 @@ async function onSubmit(values, { resetForm }) {
       :initial-values="initialValues"
       @submit="onSubmit"
     >
-      <template #default="{ values }">
+      <template #default="{ values, submitForm }">
         <FormWizard
           ref="wizardRef"
           :steps="wizardSteps"
           finish-label="Submit report"
-          @complete="handleWizardComplete"
+          @complete="() => handleWizardComplete(submitForm)"
         >
           <template #default="{ step }">
             <div v-if="step?.id === 'images'" class="d-grid gap-3">
