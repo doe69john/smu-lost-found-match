@@ -15,8 +15,7 @@ const toastClass = (variant = 'primary') =>
     `text-bg-${variant}`,
     'border-0',
     'show',
-    'transition-base',
-    'transition-lift'
+    'transition-base'
   ].join(' ')
 </script>
 

@@ -45,7 +45,7 @@ const bodyClasses = computed(
 </script>
 
 <template>
-  <div class="card ui-card transition-lift transition-base" v-bind="$attrs">
+  <div class="card ui-card transition-base" v-bind="$attrs">
     <header v-if="$slots.header || title" :class="['card-header ui-card__header border-0', headerClass]">
       <slot name="header">
         <div class="d-flex align-items-start gap-3">
