@@ -103,6 +103,7 @@
   --bs-btn-padding-y: 0.75rem;
   --bs-btn-padding-x: 1.35rem;
   --bs-btn-font-weight: 600;
+  --app-header-offset: clamp(4.75rem, 7vw, 6rem);
 }
 
 .dark {
@@ -219,7 +220,8 @@ small,
 .app-main {
   position: relative;
   flex: 1;
-  padding-block: clamp(3.5rem, 6vw, 6rem);
+  padding-block-start: calc(var(--app-header-offset) + clamp(3.5rem, 6vw, 6rem));
+  padding-block-end: clamp(3.5rem, 6vw, 6rem);
   overflow: hidden;
 }
 
@@ -389,6 +391,7 @@ small,
   position: sticky;
   top: 0;
   z-index: 1050;
+  min-height: var(--app-header-offset);
   backdrop-filter: blur(18px);
   background: color-mix(in srgb, var(--surface-base) 85%, transparent);
   border-bottom: 1px solid rgba(99, 102, 241, 0.08);
@@ -607,7 +610,7 @@ small,
 
 .app-header__drawer {
   position: fixed;
-  top: calc(var(--space-lg) + 3.5rem);
+  top: calc(var(--space-lg) + var(--app-header-offset));
   right: var(--layout-gutter);
   width: min(360px, calc(100% - 2 * var(--layout-gutter)));
   background: var(--surface-base);
