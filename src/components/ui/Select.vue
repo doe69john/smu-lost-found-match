@@ -119,7 +119,7 @@ const shouldShowPlaceholder = computed(
 </script>
 
 <template>
-  <div class="d-grid gap-1">
+  <div class="form-field">
     <label v-if="label" class="form-label" :for="selectId">
       <slot name="label">{{ label }}</slot>
       <span v-if="required" class="required-indicator" aria-hidden="true">*</span>
@@ -127,7 +127,7 @@ const shouldShowPlaceholder = computed(
 
     <select
       :id="selectId"
-      :class="['form-select', stateClass].filter(Boolean).join(' ')"
+      :class="['form-select', 'ui-input', 'transition-base', stateClass].filter(Boolean).join(' ')"
       :multiple="multiple"
       :required="required"
       :aria-describedby="describedBy"

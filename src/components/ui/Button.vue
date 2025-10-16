@@ -66,7 +66,7 @@ const slots = useSlots()
 const hasText = computed(() => Boolean(slots.default))
 
 const classes = computed(() => {
-  const classes = ['btn']
+  const classes = ['btn', 'ui-button', 'transition-base', 'transition-lift', 'transition-press']
   const variantClass = variantClasses[props.variant] || `btn-${props.variant}`
   classes.push(variantClass)
 
