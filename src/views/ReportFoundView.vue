@@ -283,17 +283,42 @@ const wizardSteps = computed(() => [
 ])
 
 async function handleWizardComplete(submitForm) {
+  if (import.meta.env.DEV) {
+    console.debug('handleWizardComplete invoked', {
+      isSubmitting: isSubmitting.value,
+      hasSubmitHelper: typeof submitForm === 'function'
+    })
+  }
+
   if (isSubmitting.value) return
 
   if (typeof submitForm !== 'function') {
-    console.warn('VForm submit helper was not provided to handleWizardComplete')
+    if (import.meta.env.DEV) {
+      console.warn('VForm submit helper was not provided to handleWizardComplete')
+    }
     return
   }
 
-  await submitForm()
+  try {
+    if (import.meta.env.DEV) {
+      console.debug('Invoking VeeValidate submitForm helper from handleWizardComplete')
+    }
+    await submitForm()
+    if (import.meta.env.DEV) {
+      console.debug('VeeValidate submitForm resolved without throwing')
+    }
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('VeeValidate submitForm rejected', error)
+    }
+    throw error
+  }
 }
 
 async function onSubmit(values, { resetForm }) {
+  if (import.meta.env.DEV) {
+    console.debug('onSubmit handler invoked with values', values)
+  }
   if (!user.value?.id) {
     pushToast({
       title: 'Authentication required',
@@ -356,7 +381,15 @@ async function onSubmit(values, { resetForm }) {
       }
     })
 
+    if (import.meta.env.DEV) {
+      console.debug('Submitting payload to createFoundItem', submissionValues)
+    }
+
     await createFoundItem(submissionValues)
+
+    if (import.meta.env.DEV) {
+      console.debug('createFoundItem resolved successfully')
+    }
 
     pushToast({
       title: 'Report submitted',
