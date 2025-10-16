@@ -166,6 +166,10 @@ defineExpose({
 </template>
 
 <style scoped>
+.form-wizard {
+  scroll-margin-top: 6rem;
+}
+
 .wizard-progress .progress {
   height: 0.75rem;
   background-color: rgba(13, 110, 253, 0.1);
@@ -205,6 +209,10 @@ defineExpose({
 }
 
 @media (max-width: 576px) {
+  .form-wizard {
+    scroll-margin-top: 7.5rem;
+  }
+
   .wizard-step-panel {
     padding: 1.25rem;
   }

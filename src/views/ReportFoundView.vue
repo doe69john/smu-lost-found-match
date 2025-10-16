@@ -140,15 +140,6 @@ function handleFilesSelected(event) {
   }
 }
 
-function moveImage(index, direction) {
-  const newIndex = index + direction
-  if (newIndex < 0 || newIndex >= imageEntries.value.length) return
-  const entries = [...imageEntries.value]
-  const [moved] = entries.splice(index, 1)
-  entries.splice(newIndex, 0, moved)
-  imageEntries.value = entries
-}
-
 function removeImage(index) {
   const [removed] = imageEntries.value.splice(index, 1)
   if (removed?.previewUrl) {
@@ -292,9 +283,16 @@ const wizardSteps = computed(() => [
 ])
 
 async function handleWizardComplete() {
-  if (isSubmitting.value) return
-  if (formRef.value) {
+  if (isSubmitting.value || !formRef.value) return
+
+  if (typeof formRef.value.submitForm === 'function') {
     await formRef.value.submitForm()
+    return
+  }
+
+  if (typeof formRef.value.handleSubmit === 'function') {
+    const submit = formRef.value.handleSubmit(onSubmit)
+    await submit()
   }
 }
 
@@ -396,8 +394,7 @@ async function onSubmit(values, { resetForm }) {
 <template>
   <section class="d-grid gap-4">
     <header>
-      <h1 class="h3 fw-semibold mb-1">Report a found item</h1>
-      <p class="text-muted mb-0">Walk through each step to help campus security reunite this item with its owner.</p>
+      <h1 class="h3 fw-semibold mb-0">Report a found item</h1>
     </header>
 
     <VForm
@@ -452,24 +449,6 @@ async function onSubmit(values, { resetForm }) {
                   <div class="card-body d-grid gap-2">
                     <div class="d-flex align-items-center justify-content-between">
                       <span class="fw-semibold">Image {{ index + 1 }}</span>
-                      <div class="btn-group btn-group-sm" role="group" aria-label="Reorder images">
-                        <button
-                          type="button"
-                          class="btn btn-outline-secondary"
-                          :disabled="index === 0 || isSubmitting"
-                          @click="moveImage(index, -1)"
-                        >
-                          <i class="bi bi-arrow-up"></i>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-outline-secondary"
-                          :disabled="index === imageEntries.length - 1 || isSubmitting"
-                          @click="moveImage(index, 1)"
-                        >
-                          <i class="bi bi-arrow-down"></i>
-                        </button>
-                      </div>
                     </div>
                     <div
                       v-if="isSubmitting || (entry.progress > 0 && entry.progress < 100)"
@@ -803,7 +782,7 @@ async function onSubmit(values, { resetForm }) {
                   type="button"
                   class="btn btn-primary d-inline-flex align-items-center gap-2"
                   :disabled="isSubmitting"
-                  @click="goNext"
+                  @click="handleWizardComplete"
                 >
                   <PulseLoader v-if="showSubmitLoader" size="sm" />
                   <span>{{ isSubmitting ? 'Submitting…' : 'Submit report' }}</span>
