@@ -407,7 +407,7 @@ async function onSubmit(values, { resetForm }) {
     })
     imageEntries.value = []
 
-    router.push({ name: 'my-reports' })
+    router.push({ name: 'dashboard' })
   } catch (error) {
     submissionError.value = error?.message || 'Unable to submit the report. Please try again.'
     pushToast({
