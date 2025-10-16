@@ -49,7 +49,7 @@ export async function createSignedUploadUrl({
   }
 }
 
-export async function uploadToSignedUrl({ signedUrl, file, contentType }) {
+export async function uploadToSignedUrl({ signedUrl, file, contentType, onProgress }) {
   if (!signedUrl) {
     throw new Error('A signed URL is required to upload a file.')
   }
@@ -77,16 +77,48 @@ export async function uploadToSignedUrl({ signedUrl, file, contentType }) {
       }
     }
 
-    const response = await fetch(signedUrl, {
-      method: 'PUT',
-      headers,
-      body
-    })
+    const performUpload = () => {
+      if (typeof XMLHttpRequest !== 'undefined' && typeof onProgress === 'function') {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest()
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              onProgress({
+                loaded: event.loaded,
+                total: event.total,
+                percentage: event.total ? Math.round((event.loaded / event.total) * 100) : 0
+              })
+            }
+          }
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve()
+            } else {
+              reject(new Error(xhr.responseText || 'Upload failed.'))
+            }
+          }
+          xhr.onerror = () => reject(new Error('Upload failed. Please try again.'))
+          xhr.open('PUT', signedUrl, true)
+          Object.entries(headers).forEach(([key, value]) => {
+            xhr.setRequestHeader(key, value)
+          })
+          xhr.send(body)
+        })
+      }
 
-    if (!response.ok) {
-      const text = await response.text()
-      throw new Error(text || 'Upload failed.')
+      return fetch(signedUrl, {
+        method: 'PUT',
+        headers,
+        body
+      }).then(async (response) => {
+        if (!response.ok) {
+          const text = await response.text()
+          throw new Error(text || 'Upload failed.')
+        }
+      })
     }
+
+    await performUpload()
 
     const url = new URL(signedUrl)
     const [, objectPath = ''] = url.pathname.split('/object/upload/sign/')
@@ -109,4 +141,71 @@ export function getPublicAssetUrl(path, bucketId = DEFAULT_BUCKET) {
   const cleanedPath = path?.replace(/^\/+/, '') || ''
   const base = httpClient.defaults.baseURL?.replace(/\/$/, '') || ''
   return `${base}${STORAGE_BASE_PATH}/object/public/${bucketId}/${cleanedPath}`
+}
+
+export async function uploadFilesSequentially(files, {
+  bucketId = DEFAULT_BUCKET,
+  buildPath,
+  upsert = true,
+  onFileStart,
+  onFileProgress,
+  onFileComplete
+} = {}) {
+  if (!Array.isArray(files) || files.length === 0) {
+    return []
+  }
+
+  const uploads = []
+
+  for (let index = 0; index < files.length; index += 1) {
+    const file = files[index]
+    if (!(file instanceof Blob)) continue
+
+    const extension = file.name?.split('.').pop() || 'jpg'
+    const safeName = file.name?.replace(/\s+/g, '-') || `image-${index}.${extension}`
+    const path = typeof buildPath === 'function'
+      ? buildPath(file, index)
+      : `${Date.now()}-${index}-${safeName}`
+
+    const { signedUrl, path: storagePath } = await createSignedUploadUrl({
+      bucketId,
+      path,
+      upsert
+    })
+
+    onFileStart?.({ file, index, path: storagePath })
+
+    await uploadToSignedUrl({
+      signedUrl,
+      file,
+      contentType: file.type,
+      onProgress: onFileProgress
+        ? (event) => {
+          const percentage = event.total
+            ? Math.round((event.loaded / event.total) * 100)
+            : event.percentage ?? 0
+          onFileProgress({
+            file,
+            index,
+            loaded: event.loaded,
+            total: event.total,
+            percentage
+          })
+        }
+        : undefined
+    })
+
+    const metadata = {
+      path: storagePath,
+      bucketId,
+      originalName: file.name || safeName,
+      size: file.size ?? null,
+      mimeType: file.type || null
+    }
+
+    onFileComplete?.({ file, index, metadata })
+    uploads.push(metadata)
+  }
+
+  return uploads
 }
