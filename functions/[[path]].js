@@ -11,14 +11,22 @@ export async function onRequest(context) {
   }
 
   const url = new URL(request.url);
-  const accept = (request.headers.get("accept") || "").toLowerCase();
   const lastSegment = url.pathname.split("/").pop() || "";
   const hasExtension = lastSegment.includes(".");
 
-  const isHtmlNavigation =
-    accept.includes("text/html") || accept.includes("*/*") || !hasExtension;
+  if (hasExtension) {
+    return response;
+  }
 
-  if (!isHtmlNavigation) {
+  const accept = (request.headers.get("accept") || "").toLowerCase();
+  const secFetchMode = (request.headers.get("sec-fetch-mode") || "").toLowerCase();
+
+  const isNavigation =
+    secFetchMode === "navigate" ||
+    secFetchMode === "document" ||
+    accept.includes("text/html");
+
+  if (!isNavigation) {
     return response;
   }
 
