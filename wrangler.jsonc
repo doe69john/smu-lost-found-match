@@ -3,5 +3,6 @@
   "compatibility_date": "2024-05-30",
   "assets": {
     "directory": "./dist"
-  }
+  },
+  "main": "./_worker.js"
 }
