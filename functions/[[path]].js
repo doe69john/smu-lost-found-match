@@ -31,5 +31,10 @@ export async function onRequest(context) {
   }
 
   const indexUrl = new URL("/index.html", url);
-  return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+  const headers = new Headers(request.headers);
+  const indexRequest = new Request(indexUrl.toString(), {
+    headers,
+    method: "GET",
+  });
+  return env.ASSETS.fetch(indexRequest);
 }

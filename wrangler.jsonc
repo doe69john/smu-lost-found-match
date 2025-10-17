@@ -2,7 +2,8 @@
   "name": "smulostandfound",
   "compatibility_date": "2024-05-30",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS"
   },
   "main": "./_worker.js"
 }

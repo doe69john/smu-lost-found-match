@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     if (request.method !== "GET") {
       return env.ASSETS.fetch(request);
     }
@@ -8,13 +8,13 @@ export default {
     const lastSegment = url.pathname.split("/").pop() || "";
     const hasExtension = lastSegment.includes(".");
 
-    const response = await env.ASSETS.fetch(request);
-    if (response.status !== 404) {
-      return response;
+    const assetResponse = await env.ASSETS.fetch(request);
+    if (assetResponse.status !== 404) {
+      return assetResponse;
     }
 
     if (hasExtension) {
-      return response;
+      return assetResponse;
     }
 
     const accept = (request.headers.get("accept") || "").toLowerCase();
@@ -26,10 +26,15 @@ export default {
       accept.includes("text/html");
 
     if (!isNavigation) {
-      return response;
+      return assetResponse;
     }
 
     const indexUrl = new URL("/index.html", url);
-    return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+    const headers = new Headers(request.headers);
+    const indexRequest = new Request(indexUrl.toString(), {
+      headers,
+      method: "GET",
+    });
+    return env.ASSETS.fetch(indexRequest);
   },
 };
