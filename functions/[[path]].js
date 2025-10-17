@@ -10,12 +10,31 @@ export async function onRequest(context) {
     return response;
   }
 
-  const accept = request.headers.get("accept") || "";
-  if (!accept.includes("text/html")) {
+  const url = new URL(request.url);
+  const lastSegment = url.pathname.split("/").pop() || "";
+  const hasExtension = lastSegment.includes(".");
+
+  if (hasExtension) {
     return response;
   }
 
-  const url = new URL(request.url);
+  const accept = (request.headers.get("accept") || "").toLowerCase();
+  const secFetchMode = (request.headers.get("sec-fetch-mode") || "").toLowerCase();
+
+  const isNavigation =
+    secFetchMode === "navigate" ||
+    secFetchMode === "document" ||
+    accept.includes("text/html");
+
+  if (!isNavigation) {
+    return response;
+  }
+
   const indexUrl = new URL("/index.html", url);
-  return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+  const headers = new Headers(request.headers);
+  const indexRequest = new Request(indexUrl.toString(), {
+    headers,
+    method: "GET",
+  });
+  return env.ASSETS.fetch(indexRequest);
 }
