@@ -3,7 +3,7 @@
 This document summarizes the REST interfaces exposed by the Supabase project that power the Lost & Found application. All endpoints live under the project base URL:
 
 ```
-https://oxubfeizhswsrczchtkr.supabase.co
+https://<project-ref>.supabase.co
 ```
 
 Every request must include the `apikey` header containing the project's anon key. Authenticated requests also require an `Authorization: Bearer <access_token>` header using the GoTrue session token issued during sign in.
@@ -21,7 +21,7 @@ Every request must include the `apikey` header containing the project's anon key
 
 ```http
 POST /auth/v1/token?grant_type=password HTTP/1.1
-Host: oxubfeizhswsrczchtkr.supabase.co
+Host: <project-ref>.supabase.co
 apikey: <anon-key>
 Content-Type: application/json
 
@@ -71,7 +71,7 @@ Example insert:
 
 ```http
 POST /rest/v1/profiles HTTP/1.1
-Host: oxubfeizhswsrczchtkr.supabase.co
+Host: <project-ref>.supabase.co
 apikey: <anon-key>
 Authorization: Bearer <access-token>
 Content-Type: application/json
@@ -165,7 +165,7 @@ Example signed upload response:
 }
 ```
 
-You can then `PUT` the file directly to `https://oxubfeizhswsrczchtkr.supabase.co/storage/v1/object/upload/sign/item-images/user-uuid/backpack.jpg?token=Af2g...`.
+You can then `PUT` the file directly to `https://<project-ref>.supabase.co/storage/v1/object/upload/sign/item-images/user-uuid/backpack.jpg?token=Af2g...`.
 
 Errors follow the storage REST format:
 
