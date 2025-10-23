@@ -2,15 +2,12 @@ import axios from 'axios'
 
 import { emitSessionExpired } from './sessionManager'
 
-const DEFAULT_SUPABASE_URL = 'https://oxubfeizhswsrczchtkr.supabase.co'
-const DEFAULT_SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94dWJmZWl6aHN3c3JjemNodGtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwMTkxMjQsImV4cCI6MjA3NTU5NTEyNH0.4ddHb2caQRrkO01b2eE3tAL-gVQAdxTOAiXTWk_mTxU'
 
 const SUPABASE_URL = (
-  import.meta.env?.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL
+  import.meta.env?.VITE_SUPABASE_URL
 ).replace(/\/$/, '')
 const SUPABASE_ANON_KEY =
-  import.meta.env?.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY
+  import.meta.env?.VITE_SUPABASE_ANON_KEY
 
 function extractProjectRef(url) {
   if (!url) return ''
