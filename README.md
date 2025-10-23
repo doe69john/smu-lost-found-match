@@ -4,10 +4,18 @@ This project uses Vue 3 + Vite with a Bootstrap-first design system. Shared comp
 
 ## Getting started
 
-```bash
-npm install
-npm run dev
-```
+1. Copy `.env.example` to `.env.local` (or `.env`) and fill in your Supabase URL and anon key.
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. Install dependencies and start the dev server:
+
+   ```bash
+   npm install
+   npm run dev
+   ```
 
 ## Design system
 
