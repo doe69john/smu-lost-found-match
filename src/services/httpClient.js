@@ -14,12 +14,12 @@ const runtimeSupabaseAnonKey =
     : undefined
 
 const rawSupabaseUrl =
-  runtimeSupabaseUrl ?? import.meta.env?.VITE_SUPABASE_URL ?? ''
+  runtimeSupabaseUrl || import.meta.env?.VITE_SUPABASE_URL || ''
 
 const SUPABASE_URL = rawSupabaseUrl ? rawSupabaseUrl.replace(/\/$/, '') : ''
 
 const SUPABASE_ANON_KEY =
-  runtimeSupabaseAnonKey ?? import.meta.env?.VITE_SUPABASE_ANON_KEY ?? ''
+  runtimeSupabaseAnonKey || import.meta.env?.VITE_SUPABASE_ANON_KEY || ''
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.warn(
