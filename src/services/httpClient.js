@@ -3,11 +3,29 @@ import axios from 'axios'
 import { emitSessionExpired } from './sessionManager'
 
 
-const SUPABASE_URL = (
-  import.meta.env?.VITE_SUPABASE_URL
-).replace(/\/$/, '')
+const runtimeSupabaseUrl =
+  typeof globalThis !== 'undefined' && globalThis.__SUPABASE_URL__
+    ? globalThis.__SUPABASE_URL__
+    : undefined
+
+const runtimeSupabaseAnonKey =
+  typeof globalThis !== 'undefined' && globalThis.__SUPABASE_ANON_KEY__
+    ? globalThis.__SUPABASE_ANON_KEY__
+    : undefined
+
+const rawSupabaseUrl =
+  runtimeSupabaseUrl || import.meta.env?.VITE_SUPABASE_URL || ''
+
+const SUPABASE_URL = rawSupabaseUrl ? rawSupabaseUrl.replace(/\/$/, '') : ''
+
 const SUPABASE_ANON_KEY =
-  import.meta.env?.VITE_SUPABASE_ANON_KEY
+  runtimeSupabaseAnonKey || import.meta.env?.VITE_SUPABASE_ANON_KEY || ''
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.warn(
+    'Supabase configuration is missing. Ensure the Cloudflare worker exposes VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
+  )
+}
 
 function extractProjectRef(url) {
   if (!url) return ''
@@ -52,13 +70,18 @@ export function getSessionFromStorage() {
   }
 }
 
+const defaultHeaders = {
+  Accept: 'application/json',
+  'Content-Type': 'application/json'
+}
+
+if (SUPABASE_ANON_KEY) {
+  defaultHeaders.apikey = SUPABASE_ANON_KEY
+}
+
 const httpClient = axios.create({
-  baseURL: SUPABASE_URL,
-  headers: {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-    apikey: SUPABASE_ANON_KEY
-  }
+  baseURL: SUPABASE_URL || undefined,
+  headers: defaultHeaders
 })
 
 httpClient.interceptors.request.use((config) => {
