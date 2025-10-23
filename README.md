@@ -4,7 +4,7 @@ This project uses Vue 3 + Vite with a Bootstrap-first design system. Shared comp
 
 ## Getting started
 
-1. Copy `.env.example` to `.env.local` (or `.env`) and fill in your Supabase URL and anon key.
+1. Copy `.env.example` to `.env.local` (or `.env`) and fill in your Supabase URL, project ID, and publishable key.
 
    ```bash
    cp .env.example .env.local
@@ -16,6 +16,16 @@ This project uses Vue 3 + Vite with a Bootstrap-first design system. Shared comp
    npm install
    npm run dev
    ```
+
+## Deploying to Cloudflare Pages
+
+Set the Supabase credentials as environment variables (or secrets) in your Cloudflare Pages project settings before building or deploying:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PROJECT_ID`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+The `wrangler.jsonc` config will pick up these values during `npm run build` so that the generated client bundle can connect to Supabase without hard-coded keys.
 
 ## Design system
 

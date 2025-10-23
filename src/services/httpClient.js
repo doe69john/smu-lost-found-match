@@ -2,16 +2,21 @@ import axios from 'axios'
 
 import { emitSessionExpired } from './sessionManager'
 
-const rawSupabaseUrl = import.meta.env?.VITE_SUPABASE_URL
+const rawSupabaseUrl = import.meta.env?.VITE_SUPABASE_URL?.trim()
 const SUPABASE_URL = rawSupabaseUrl?.replace(/\/$/, '')
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY
+const SUPABASE_PROJECT_ID = import.meta.env?.VITE_SUPABASE_PROJECT_ID?.trim()
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ||
+  import.meta.env?.VITE_SUPABASE_ANON_KEY?.trim()
 
 if (!SUPABASE_URL) {
   throw new Error('Missing VITE_SUPABASE_URL environment variable')
 }
 
-if (!SUPABASE_ANON_KEY) {
-  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable')
+if (!SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error(
+    'Missing Supabase publishable key. Set VITE_SUPABASE_PUBLISHABLE_KEY (or legacy VITE_SUPABASE_ANON_KEY) in your environment.'
+  )
 }
 
 function extractProjectRef(url) {
@@ -25,7 +30,7 @@ function extractProjectRef(url) {
   }
 }
 
-const projectRef = extractProjectRef(SUPABASE_URL)
+const projectRef = SUPABASE_PROJECT_ID || extractProjectRef(SUPABASE_URL)
 const AUTH_STORAGE_KEY = projectRef ? `sb-${projectRef}-auth-token` : null
 
 export function getAuthStorageKey() {
@@ -62,7 +67,7 @@ const httpClient = axios.create({
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
-    apikey: SUPABASE_ANON_KEY
+    apikey: SUPABASE_PUBLISHABLE_KEY
   }
 })
 
