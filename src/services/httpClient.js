@@ -3,24 +3,11 @@ import axios from 'axios'
 import { emitSessionExpired } from './sessionManager'
 
 
-const runtimeConfig =
-  (typeof globalThis !== 'undefined' && globalThis.__APP_CONFIG) || undefined
-
-const rawSupabaseUrl =
-  runtimeConfig?.VITE_SUPABASE_URL ?? import.meta.env?.VITE_SUPABASE_URL ?? ''
-
-const SUPABASE_URL = rawSupabaseUrl ? rawSupabaseUrl.replace(/\/$/, '') : ''
-
+const SUPABASE_URL = (
+  import.meta.env?.VITE_SUPABASE_URL
+).replace(/\/$/, '')
 const SUPABASE_ANON_KEY =
-  runtimeConfig?.VITE_SUPABASE_ANON_KEY ??
-  import.meta.env?.VITE_SUPABASE_ANON_KEY ??
-  ''
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn(
-    'Supabase configuration is missing. Please ensure the worker provides VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
-  )
-}
+  import.meta.env?.VITE_SUPABASE_ANON_KEY
 
 function extractProjectRef(url) {
   if (!url) return ''
@@ -65,18 +52,13 @@ export function getSessionFromStorage() {
   }
 }
 
-const defaultHeaders = {
-  Accept: 'application/json',
-  'Content-Type': 'application/json'
-}
-
-if (SUPABASE_ANON_KEY) {
-  defaultHeaders.apikey = SUPABASE_ANON_KEY
-}
-
 const httpClient = axios.create({
-  baseURL: SUPABASE_URL || undefined,
-  headers: defaultHeaders
+  baseURL: SUPABASE_URL,
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    apikey: SUPABASE_ANON_KEY
+  }
 })
 
 httpClient.interceptors.request.use((config) => {
