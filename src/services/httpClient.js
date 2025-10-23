@@ -57,7 +57,7 @@ const httpClient = axios.create({
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
-    apikey: SUPABASE_ANON_KEY
+    apikey: SUPABASE_PUBLISHABLE_KEY
   }
 })
 
