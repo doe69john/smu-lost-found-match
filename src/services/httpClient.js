@@ -1,115 +1,90 @@
-import axios from 'axios'
+import axios from 'axios';
+import { emitSessionExpired } from './sessionManager';
 
-import { emitSessionExpired } from './sessionManager'
-
-
+// runtime overrides 
 const runtimeSupabaseUrl =
-  typeof globalThis !== 'undefined' && globalThis.__SUPABASE_URL__
-    ? globalThis.__SUPABASE_URL__
-    : undefined
-
+  typeof globalThis !== 'undefined' && globalThis.__SUPABASE_URL__ || undefined;
 const runtimeSupabaseAnonKey =
-  typeof globalThis !== 'undefined' && globalThis.__SUPABASE_ANON_KEY__
-    ? globalThis.__SUPABASE_ANON_KEY__
-    : undefined
+  typeof globalThis !== 'undefined' && globalThis.__SUPABASE_ANON_KEY__ || undefined;
 
-const rawSupabaseUrl =
-  runtimeSupabaseUrl || import.meta.env?.VITE_SUPABASE_URL || ''
-
-const SUPABASE_URL = rawSupabaseUrl ? rawSupabaseUrl.replace(/\/$/, '') : ''
-
-const SUPABASE_ANON_KEY =
-  runtimeSupabaseAnonKey || import.meta.env?.VITE_SUPABASE_ANON_KEY || ''
+// Build-time (Vite) values 
+const rawSupabaseUrl = runtimeSupabaseUrl || import.meta.env?.VITE_SUPABASE_URL || '';
+const SUPABASE_URL = rawSupabaseUrl ? rawSupabaseUrl.replace(/\/$/, '') : '';
+const SUPABASE_ANON_KEY = runtimeSupabaseAnonKey || import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn(
-    'Supabase configuration is missing. Ensure the Cloudflare worker exposes VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
-  )
+ 
+  throw new Error(
+    'Supabase config missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY at build time (e.g., .env.production) and rebuild.'
+  );
 }
 
 function extractProjectRef(url) {
-  if (!url) return ''
+  if (!url) return '';
   try {
-    const { hostname } = new URL(url)
-    const [projectRef] = hostname.split('.')
-    return projectRef
+    const { hostname } = new URL(url);
+    const [projectRef] = hostname.split('.');
+    return projectRef;
   } catch {
-    return ''
+    return '';
   }
 }
 
-const projectRef = extractProjectRef(SUPABASE_URL)
-const AUTH_STORAGE_KEY = projectRef ? `sb-${projectRef}-auth-token` : null
+const projectRef = extractProjectRef(SUPABASE_URL);
+const AUTH_STORAGE_KEY = projectRef ? `sb-${projectRef}-auth-token` : null;
 
 export function getAuthStorageKey() {
-  return AUTH_STORAGE_KEY
+  return AUTH_STORAGE_KEY;
 }
 
 export function getSessionFromStorage() {
-  if (!AUTH_STORAGE_KEY || typeof window === 'undefined') {
-    return null
-  }
-
+  if (!AUTH_STORAGE_KEY || typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY)
-    if (!raw) return null
-
-    const parsed = JSON.parse(raw)
-    if (parsed?.access_token) {
-      return parsed
-    }
-
-    if (parsed?.currentSession?.access_token) {
-      return parsed.currentSession
-    }
-
-    return parsed
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.access_token) return parsed;
+    if (parsed?.currentSession?.access_token) return parsed.currentSession;
+    return parsed;
   } catch (error) {
-    console.warn('Failed to parse Supabase session from storage', error)
-    return null
+    console.warn('Failed to parse Supabase session from storage', error);
+    return null;
   }
 }
 
 const defaultHeaders = {
   Accept: 'application/json',
-  'Content-Type': 'application/json'
-}
-
-if (SUPABASE_ANON_KEY) {
-  defaultHeaders.apikey = SUPABASE_ANON_KEY
-}
+  'Content-Type': 'application/json',
+  apikey: SUPABASE_ANON_KEY
+};
 
 const httpClient = axios.create({
-  baseURL: SUPABASE_URL || undefined,
+  baseURL: SUPABASE_URL,
   headers: defaultHeaders
-})
+});
 
 httpClient.interceptors.request.use((config) => {
-  const session = getSessionFromStorage()
-  const token = session?.access_token || session?.accessToken
-
+  const session = getSessionFromStorage();
+  const token = session?.access_token || session?.accessToken;
   if (token) {
-    config.headers = config.headers || {}
-    config.headers.Authorization = `Bearer ${token}`
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
   }
-
-  return config
-})
+  return config;
+});
 
 httpClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const status = error.response?.status
-    const requestUrl = error.config?.url || ''
-
-    const isAuthRequest = /\/auth\/v1\/(token|signup|logout)/.test(requestUrl)
+    const status = error.response?.status;
+    const requestUrl = error.config?.url || '';
+    const isAuthRequest = /\/auth\/v1\/(token|signup|logout)/.test(requestUrl);
 
     if ((status === 401 || status === 419) && !isAuthRequest) {
-      emitSessionExpired({ reason: status === 419 ? 'session-timeout' : 'expired' })
+      emitSessionExpired({ reason: status === 419 ? 'session-timeout' : 'expired' });
     }
-
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
-)
+);
 
-export default httpClient
+export default httpClient;
