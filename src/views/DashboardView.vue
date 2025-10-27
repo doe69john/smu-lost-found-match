@@ -5,6 +5,9 @@ import { useAuth } from '../composables/useAuth'
 import { fetchLostItems } from '../services/lostItemsService'
 import { fetchFoundItems } from '../services/foundItemsService'
 import { pushToast } from '../composables/useToast'
+import lostIcon from '../assets/lost.png'
+import foundIcon from '../assets/found.png'
+
 
 const { user } = useAuth()
 
@@ -113,36 +116,69 @@ const quickLinks = [
     </header>
 
     <div class="row g-3">
-      <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <h2 class="card-title h6 text-uppercase text-muted">Lost reports</h2>
-            <p class="display-6 fw-bold mb-0">{{ isLoading ? '–' : lostCount }}</p>
-            <p class="text-muted small mb-0">Filed by students and staff.</p>
-          </div>
+      <!-- Lost reports billboard -->
+  <div class="col-12 col-lg-6">
+    <div
+      class="card border-0 shadow-sm overflow-hidden text-white h-100"
+      style="border-radius: 1rem; background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);"
+    >
+      <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
+        <div>
+          <div class="text-white-50 text-uppercase small fw-semibold mb-1">Lost reports</div>
+          <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : lostCount }}</div>
+          <div class="small text-white-75">Filed by students and staff.</div>
+        </div>
+        <div
+            class="d-none d-sm-flex align-items-center justify-content-center"
+            style="width:90px;height:90px;overflow:hidden;"
+            aria-hidden="true"
+        >
+          <img
+            :src="lostIcon"
+            alt="LostIcon"
+            style="width:70%;height:auto;object-fit:contain;filter:brightness(0) invert(1);"
+          />
+
+</div>
+
+      </div>
+    </div>
+  </div>
+
+      <!-- Found submissions billboard -->
+  <div class="col-12 col-lg-6">
+    <div
+      class="card border-0 shadow-sm overflow-hidden text-white h-100"
+      style="border-radius: 1rem; background: linear-gradient(135deg,#059669 0%, #10b981 50%, #22c55e 100%);"
+    >
+      <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
+        <div>
+          <div class="text-white-50 text-uppercase small fw-semibold mb-1">Found submissions</div>
+          <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : foundCount }}</div>
+          <div class="small text-white-75">Items waiting for a match.</div>
+        </div>
+        <div
+          class="d-none d-sm-flex align-items-center justify-content-center"
+          style="width:90px;height:90px;overflow:hidden;"
+          aria-hidden="true"
+        >
+          <img
+            :src="foundIcon"
+            alt="Found Icon"
+            style="width:70%;height:auto;object-fit:contain;filter:brightness(0) invert(1);"
+          />
         </div>
       </div>
-      <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <h2 class="card-title h6 text-uppercase text-muted">Found submissions</h2>
-            <p class="display-6 fw-bold mb-0">{{ isLoading ? '–' : foundCount }}</p>
-            <p class="text-muted small mb-0">Items waiting for a match.</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-6">
+    </div>
+  </div>
+      <div class="col-lg-12">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body">
             <h2 class="card-title h6 text-uppercase text-muted">Quick actions</h2>
-            <ul class="list-unstyled mb-0">
+            <ul class="list-unstyled mb-0 quick-links">
               <li v-for="link in quickLinks" :key="link.label" class="mb-2">
-                <RouterLink class="d-flex align-items-start gap-3 text-decoration-none" :to="link.to">
-                  <span
-                    class="rounded-circle bg-primary-subtle text-primary-emphasis d-inline-flex align-items-center justify-content-center fs-5"
-                    style="width: 40px; height: 40px;"
-                    aria-hidden="true"
-                  >
+                <RouterLink class="quick-link d-flex align-items-start gap-3 text-decoration-none" :to="link.to">
+                  <span class="quick-icon" aria-hidden="true">
                     {{ link.emoji }}
                   </span>
                   <span>
@@ -240,3 +276,52 @@ const quickLinks = [
     </div>
   </section>
 </template>
+
+<style>
+.quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.quick-link {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 14px 18px;
+  transition: all 0.25s ease;
+  color: inherit;
+}
+
+.quick-link:hover {
+  background: #eef2ff; 
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25); 
+  transform: translateY(-2px);
+}
+
+.quick-icon {
+  width: 60px;
+  height: 60px;
+  font-size: 2rem; 
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.1); 
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.quick-link:hover .quick-icon {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.link-label {
+  color: #4f46e5;
+  transition: color 0.3s ease;
+}
+.quick-link:hover .link-label {
+  color: #3730a3; 
+}
+
+</style>
