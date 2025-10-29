@@ -4,9 +4,13 @@ import './assets/index.css'
 import App from './App.vue'
 import router from './router'
 import { registerSessionRouter } from './services/sessionManager'
+import { initTheme } from './composables/useTheme'
 
 const app = createApp(App)
 
 app.use(router)
 registerSessionRouter(router)
+
+// Initialize theme before mounting the app
+initTheme()
 app.mount('#app')

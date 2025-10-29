@@ -305,9 +305,29 @@ const onSubmit = async (values, { resetForm }) => {
 
           <div class="col-12">
             <label class="form-label" for="lost-photo">Upload a photo (optional)</label>
-            <input id="lost-photo" type="file" accept="image/*" class="form-control" @change="onFileChange" />
-            <small class="text-muted">Clear photos speed up the matching process.</small>
-            <div v-if="fileName" class="small text-muted mt-1">Selected: {{ fileName }}</div>
+            <div class="file-input">
+              <input
+                id="lost-photo"
+                type="file"
+                accept="image/*"
+                class="file-input__native"
+                :disabled="isSubmitting"
+                @change="onFileChange"
+              />
+              <label
+                class="file-input__trigger"
+                :class="{ 'is-disabled': isSubmitting }"
+                for="lost-photo"
+                :aria-disabled="isSubmitting ? 'true' : 'false'"
+              >
+                <i class="bi bi-upload" aria-hidden="true"></i>
+                <span>{{ fileName ? 'Change photo' : 'Choose file' }}</span>
+              </label>
+              <span class="file-input__name" :class="{ 'is-empty': !fileName }">
+                {{ fileName || 'No file selected yet' }}
+              </span>
+            </div>
+            <small class="text-muted d-block mt-2">Clear photos speed up the matching process.</small>
             <div v-if="selectedFile && uploadProgress > 0" class="progress mt-2" style="height: 8px;">
               <div
                 class="progress-bar"

@@ -442,7 +442,7 @@ async function onSubmit(values, { resetForm }) {
         >
           <template #default="{ step }">
             <div v-if="step?.id === 'images'" class="d-grid gap-3">
-              <div class="border border-2 border-dashed rounded-4 p-4 text-center bg-light-subtle">
+              <div class="upload-helper text-center">
                 <div class="d-grid gap-2">
                   <span class="fw-semibold">Upload photos</span>
                   <p class="text-muted mb-0">Use your camera or photo library to add up to {{ MAX_IMAGES }} clear images.</p>
@@ -473,7 +473,7 @@ async function onSubmit(values, { resetForm }) {
                   :key="entry.id"
                   class="card border shadow-sm overflow-hidden"
                 >
-                  <div class="ratio ratio-4x3 bg-light">
+                  <div class="ratio ratio-4x3 upload-preview">
                     <img :src="entry.previewUrl" :alt="`Selected image ${index + 1}`" class="object-fit-cover" />
                   </div>
                   <div class="card-body d-grid gap-2">
@@ -825,3 +825,43 @@ async function onSubmit(values, { resetForm }) {
     </VForm>
   </section>
 </template>
+
+<style scoped>
+.upload-helper {
+  padding: clamp(1.75rem, 2vw + 1.25rem, 3rem);
+  border-radius: var(--radius-xl);
+  border: 1.6px dashed color-mix(in srgb, var(--color-border) 85%, transparent);
+  background: color-mix(in srgb, var(--surface-base) 94%, transparent);
+  box-shadow: 0 22px 36px -26px rgba(15, 23, 42, 0.45);
+  display: grid;
+  gap: var(--space-md);
+  justify-items: center;
+  transition: background var(--transition-medium) var(--transition-timing),
+    border-color var(--transition-medium) var(--transition-timing),
+    box-shadow var(--transition-medium) var(--transition-timing);
+}
+
+.upload-helper .btn {
+  white-space: nowrap;
+}
+
+.upload-helper small,
+.upload-helper .text-muted {
+  color: var(--text-muted) !important;
+}
+
+.upload-preview {
+  background: color-mix(in srgb, var(--surface-muted) 80%, transparent);
+  border-radius: var(--radius-lg);
+}
+
+.upload-preview img {
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-helper {
+    transition: none;
+  }
+}
+</style>
