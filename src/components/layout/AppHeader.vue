@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 import { pushToast } from '../../composables/useToast'
+import { useTheme } from '../../composables/useTheme'
 
 const { isAuthenticated: authStatus, user, logout } = useAuth()
 const router = useRouter()
@@ -89,6 +90,9 @@ watch(
     }
   }
 )
+
+// Theme toggle
+const { isDark, toggleTheme } = useTheme()
 </script>
 
 <template>
@@ -125,6 +129,26 @@ watch(
       </div>
 
       <div v-if="!isAuthRoute" class="app-header__auth">
+        <button
+          type="button"
+          class="app-header__ghost-button"
+          aria-label="Toggle theme"
+          title="Toggle theme"
+          @click="toggleTheme"
+        >
+          <span v-if="isDark" aria-hidden="true" style="display:inline-flex;align-items:center;gap:.35rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21.64 13.64A9 9 0 1 1 10.36 2.36 7 7 0 0 0 21.64 13.64z"/>
+            </svg>
+            Dark
+          </span>
+          <span v-else aria-hidden="true" style="display:inline-flex;align-items:center;gap:.35rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 4V2m0 20v-2m8-8h2M2 12h2m13.657 6.343l1.414 1.414M4.929 4.929l1.414 1.414m0 11.314l-1.414 1.414M19.071 4.929l-1.414 1.414M12 6a6 6 0 100 12 6 6 0 000-12z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </svg>
+            Light
+          </span>
+        </button>
         <div v-if="isLoggedIn" class="app-header__identity">
           Signed in as <strong>{{ displayName }}</strong>
         </div>
@@ -166,6 +190,12 @@ watch(
         class="app-header__drawer"
         aria-label="Mobile navigation"
       >
+        <div class="app-header__drawer-auth">
+          <button type="button" class="app-header__drawer-link" @click="toggleTheme">
+            <span v-if="isDark">Switch to Light Mode</span>
+            <span v-else>Switch to Dark Mode</span>
+          </button>
+        </div>
         <div v-if="isLoggedIn" class="app-header__drawer-nav">
           <RouterLink
             v-for="link in primaryLinks"
