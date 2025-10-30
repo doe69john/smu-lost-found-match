@@ -93,26 +93,68 @@ watch(
 
 <template>
   <header class="app-header">
-    <div class="app-header__bar">
+    <!-- Row 1 -->
+    <div class="app-header__bar app-header__bar--top">
       <div class="app-header__brand">
-        <RouterLink class="app-header__logo" to="/">
+        <RouterLink class="app-header__logo" to="/" aria-label="Go to home">
           Lost &amp; Found Portal
         </RouterLink>
       </div>
 
-      <nav v-if="isLoggedIn && !isAuthRoute" class="app-header__nav">
-        <RouterLink
-          v-for="link in primaryLinks"
-          :key="link.path"
-          class="app-header__link"
-          :class="{ 'is-active': activePath === link.path }"
-          :to="link.path"
+      <div v-if="!isAuthRoute" class="app-header__right">
+        <!-- Auth (desktop only) -->
+        <div class="app-header__auth only-desktop">
+          <template v-if="isLoggedIn">
+            <div class="app-header__identity">Signed in as <strong>{{ displayName }}</strong></div>
+            <button
+              type="button" class="app-header__solid-button signout-button" @click="handleLogout">
+              Sign out
+            </button>
+          </template>
+          <template v-else>
+            <button type="button" class="app-header__ghost-button" @click="handleGoToSignIn">
+              Sign in
+            </button>
+            <button type="button" class="app-header__solid-button" @click="handleGoToSignUp">
+              Sign up
+            </button>
+          </template>
+        </div>
+
+        <!-- Always show hamburger -->
+        <button
+          class="app-header__toggle transition-base"
+          type="button"
+          aria-controls="app-mobile-menu"
+          :aria-expanded="isMenuOpen ? 'true' : 'false'"
+          @click="toggleMenu"
+          aria-label="Open menu"
         >
-          {{ link.name }}
-        </RouterLink>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div v-if="!isAuthRoute" class="app-header__bar app-header__bar--bottom">
+      <!-- Tabs (desktop only) -->
+      <nav v-if="isLoggedIn" class="app-header__nav only-desktop" aria-label="Sections">
+        <div class="app-header__links">
+          <RouterLink
+            v-for="link in primaryLinks"
+            :key="link.path"
+            class="app-header__link"
+            :class="{ 'is-active': activePath === link.path }"
+            :to="link.path"
+            :aria-current="activePath === link.path ? 'page' : undefined"
+          >
+            {{ link.name }}
+          </RouterLink>
+        </div>
       </nav>
 
-      <div v-if="!isAuthRoute" class="app-header__cta-group">
+      <!-- CTAs (desktop only) -->
+      <div class="app-header__cta-group only-desktop" aria-label="Quick actions">
         <RouterLink
           v-for="(link, index) in ctaLinks"
           :key="link.path"
@@ -123,42 +165,19 @@ watch(
           {{ link.name }}
         </RouterLink>
       </div>
-
-      <div v-if="!isAuthRoute" class="app-header__auth">
-        <div v-if="isLoggedIn" class="app-header__identity">
-          Signed in as <strong>{{ displayName }}</strong>
-        </div>
-
-        <div v-if="!isLoggedIn" class="d-flex align-items-center gap-2">
-          <button type="button" class="app-header__ghost-button" @click="handleGoToSignIn">
-            Sign in
-          </button>
-          <button type="button" class="app-header__solid-button" @click="handleGoToSignUp">
-            Sign up
-          </button>
-        </div>
-
-        <button v-else type="button" class="app-header__solid-button" @click="handleLogout">
-          Sign out
-        </button>
-      </div>
-
-      <button
-        v-if="!isAuthRoute"
-        class="app-header__toggle transition-base"
-        type="button"
-        aria-controls="app-mobile-menu"
-        :aria-expanded="isMenuOpen ? 'true' : 'false'"
-        @click="toggleMenu"
-      >
-        <span></span>
-      </button>
     </div>
 
+    <!-- Overlay -->
     <Transition name="drawer-fade">
-      <div v-if="!isAuthRoute && isMenuOpen" class="app-header__overlay" @click="closeMenu"></div>
+      <div
+        v-if="!isAuthRoute && isMenuOpen"
+        class="app-header__overlay"
+        @click="closeMenu"
+        aria-hidden="true"
+      ></div>
     </Transition>
 
+    <!-- Drawer (mobile) -->
     <Transition name="drawer-slide">
       <nav
         v-if="!isAuthRoute && isMenuOpen"
@@ -166,6 +185,10 @@ watch(
         class="app-header__drawer"
         aria-label="Mobile navigation"
       >
+        <div v-if="isLoggedIn" class="app-header__drawer-head">
+          <p class="app-header__drawer-hello">Hello, <strong>{{ displayName }}</strong></p>
+        </div>
+
         <div v-if="isLoggedIn" class="app-header__drawer-nav">
           <RouterLink
             v-for="link in primaryLinks"
@@ -179,6 +202,7 @@ watch(
           </RouterLink>
         </div>
 
+        <!-- CTAs live here on mobile -->
         <div class="app-header__drawer-cta">
           <RouterLink
             v-for="(link, index) in ctaLinks"
@@ -201,11 +225,79 @@ watch(
               Sign up
             </button>
           </template>
-          <button v-else type="button" class="app-header__solid-button" @click="handleLogout">
-            Sign out
-          </button>
+            <button v-else type="button" class="app-header__solid-button signout-button" @click="handleLogout">
+              Sign out
+            </button>
+
         </div>
       </nav>
     </Transition>
   </header>
 </template>
+
+
+<style>
+.app-header__bar--bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 2rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.app-header__nav {
+  flex: 1; 
+}
+
+.app-header__links {
+  display: flex;
+  justify-content: space-evenly; 
+  gap: 1rem;
+  width: 100%;
+}
+
+
+.app-header__link {
+  flex: 1; 
+  text-align: center;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  transition: color 0.3s, border-color 0.3s;
+  border-bottom: 2px solid transparent;
+}
+
+.app-header__link:hover {
+  color: #4f46e5; 
+}
+
+.app-header__link.is-active {
+  border-color: #6366f1; 
+  color: #4338ca;
+}
+
+.app-header__cta-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: 2rem;
+}
+
+/* Hide desktop-only elements on small screens */
+@media (max-width: 768px) {
+  .only-desktop {
+    display: none !important;
+  }
+}
+
+.signout-button {
+  background-color: #ef4444 !important; /* Red */
+  color: #fff !important;
+  transition: background-color 0.2s;
+}
+
+.signout-button:hover {
+  background-color: #dc2626 !important; /* Darker red */
+}
+
+
+
+</style>
