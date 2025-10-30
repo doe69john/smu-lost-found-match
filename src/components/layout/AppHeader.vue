@@ -97,7 +97,7 @@ const { isDark, toggleTheme } = useTheme()
 
 <template>
   <header class="app-header">
-    <!-- Row 1 -->
+    <!-- Row 1 (always shown). On mobile this is the ONLY row -->
     <div class="app-header__bar app-header__bar--top">
       <div class="app-header__brand">
         <RouterLink class="app-header__logo" to="/" aria-label="Go to home">
@@ -109,9 +109,14 @@ const { isDark, toggleTheme } = useTheme()
         <!-- Auth (desktop only) -->
         <div class="app-header__auth only-desktop">
           <template v-if="isLoggedIn">
-            <div class="app-header__identity">Signed in as <strong>{{ displayName }}</strong></div>
+            <div class="app-header__identity">
+              Signed in as <strong>{{ displayName }}</strong>
+            </div>
             <button
-              type="button" class="app-header__solid-button signout-button" @click="handleLogout">
+              type="button"
+              class="app-header__solid-button signout-button"
+              @click="handleLogout"
+            >
               Sign out
             </button>
           </template>
@@ -125,9 +130,9 @@ const { isDark, toggleTheme } = useTheme()
           </template>
         </div>
 
-        <!-- Always show hamburger -->
+        <!-- Single hamburger (mobile only) -->
         <button
-          class="app-header__toggle transition-base"
+          class="app-header__toggle transition-base only-mobile"
           type="button"
           aria-controls="app-mobile-menu"
           :aria-expanded="isMenuOpen ? 'true' : 'false'"
@@ -139,10 +144,10 @@ const { isDark, toggleTheme } = useTheme()
       </div>
     </div>
 
-    <!-- Row 2 -->
-    <div v-if="!isAuthRoute" class="app-header__bar app-header__bar--bottom">
+    <!-- Row 2 (desktop only) -->
+    <div v-if="!isAuthRoute" class="app-header__bar app-header__bar--bottom only-desktop">
       <!-- Tabs (desktop only) -->
-      <nav v-if="isLoggedIn" class="app-header__nav only-desktop" aria-label="Sections">
+      <nav v-if="isLoggedIn" class="app-header__nav" aria-label="Sections">
         <div class="app-header__links">
           <RouterLink
             v-for="link in primaryLinks"
@@ -158,7 +163,7 @@ const { isDark, toggleTheme } = useTheme()
       </nav>
 
       <!-- CTAs (desktop only) -->
-      <div class="app-header__cta-group only-desktop" aria-label="Quick actions">
+      <div class="app-header__cta-group" aria-label="Quick actions">
         <RouterLink
           v-for="(link, index) in ctaLinks"
           :key="link.path"
@@ -170,7 +175,8 @@ const { isDark, toggleTheme } = useTheme()
         </RouterLink>
       </div>
 
-      <div v-if="!isAuthRoute" class="app-header__auth">
+      <!-- Theme + auth area (desktop only) -->
+      <div class="app-header__auth">
         <button
           type="button"
           class="app-header__ghost-button"
@@ -191,7 +197,6 @@ const { isDark, toggleTheme } = useTheme()
             Light
           </span>
         </button>
-        
 
         <div v-if="!isLoggedIn" class="d-flex align-items-center gap-2">
           <button type="button" class="app-header__ghost-button" @click="handleGoToSignIn">
@@ -201,19 +206,9 @@ const { isDark, toggleTheme } = useTheme()
             Sign up
           </button>
         </div>
-
       </div>
+<!-- (No “Signed in as” or Sign out here — both handled in Row 1) -->
 
-      <button
-        v-if="!isAuthRoute"
-        class="app-header__toggle transition-base"
-        type="button"
-        aria-controls="app-mobile-menu"
-        :aria-expanded="isMenuOpen ? 'true' : 'false'"
-        @click="toggleMenu"
-      >
-        <span></span>
-      </button>
     </div>
 
     <!-- Overlay -->
@@ -240,6 +235,7 @@ const { isDark, toggleTheme } = useTheme()
             <span v-else>Switch to Dark Mode</span>
           </button>
         </div>
+
         <div v-if="isLoggedIn" class="app-header__drawer-nav">
           <RouterLink
             v-for="link in primaryLinks"
@@ -253,7 +249,7 @@ const { isDark, toggleTheme } = useTheme()
           </RouterLink>
         </div>
 
-        <!-- CTAs live here on mobile -->
+        <!-- CTAs on mobile -->
         <div class="app-header__drawer-cta">
           <RouterLink
             v-for="(link, index) in ctaLinks"
@@ -276,15 +272,15 @@ const { isDark, toggleTheme } = useTheme()
               Sign up
             </button>
           </template>
-            <button v-else type="button" class="app-header__solid-button signout-button" @click="handleLogout">
-              Sign out
-            </button>
-
+          <button v-else type="button" class="app-header__solid-button signout-button" @click="handleLogout">
+            Sign out
+          </button>
         </div>
       </nav>
     </Transition>
   </header>
 </template>
+
 
 
 <style>
