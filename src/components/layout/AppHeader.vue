@@ -191,9 +191,7 @@ const { isDark, toggleTheme } = useTheme()
             Light
           </span>
         </button>
-        <div v-if="isLoggedIn" class="app-header__identity">
-          Signed in as <strong>{{ displayName }}</strong>
-        </div>
+        
 
         <div v-if="!isLoggedIn" class="d-flex align-items-center gap-2">
           <button type="button" class="app-header__ghost-button" @click="handleGoToSignIn">
@@ -204,9 +202,6 @@ const { isDark, toggleTheme } = useTheme()
           </button>
         </div>
 
-        <button v-else type="button" class="app-header__solid-button" @click="handleLogout">
-          Sign out
-        </button>
       </div>
 
       <button
