@@ -177,13 +177,13 @@ const quickLinks = [
             <h2 class="card-title h6 text-uppercase text-muted">Quick actions</h2>
             <ul class="list-unstyled mb-0 quick-links">
               <li v-for="link in quickLinks" :key="link.label" class="mb-2">
-                <RouterLink class="quick-link d-flex align-items-start gap-3 text-decoration-none" :to="link.to">
+                <RouterLink class="quick-link text-decoration-none" :to="link.to">
                   <span class="quick-icon" aria-hidden="true">
                     {{ link.emoji }}
                   </span>
                   <span>
-                    <span class="fw-semibold d-block">{{ link.label }}</span>
-                    <small class="text-muted">{{ link.description }}</small>
+                    <span class="link-label d-block">{{ link.label }}</span>
+                    <small class="quick-description d-block small">{{ link.description }}</small>
                   </span>
                 </RouterLink>
               </li>
@@ -285,43 +285,92 @@ const quickLinks = [
 }
 
 .quick-link {
-  background: #f8f9fa;
-  border-radius: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
   padding: 14px 18px;
-  transition: all 0.25s ease;
-  color: inherit;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--surface-base);
+  color: var(--text-body);
+  box-shadow: var(--shadow-xs);
+  transition: background var(--transition-medium) var(--transition-timing),
+    box-shadow var(--transition-medium) var(--transition-timing),
+    transform var(--transition-medium) var(--transition-timing);
 }
 
-.quick-link:hover {
-  background: #eef2ff; 
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25); 
+.quick-link:hover,
+.quick-link:focus-visible {
+  background: var(--surface-soft);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-2px);
+  text-decoration: none;
 }
 
 .quick-icon {
   width: 60px;
   height: 60px;
-  font-size: 2rem; 
+  font-size: 2rem;
   border-radius: 50%;
-  background: rgba(99, 102, 241, 0.1); 
-  color: #4f46e5;
+  background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  color: var(--color-primary-600);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: background var(--transition-medium) var(--transition-timing),
+    color var(--transition-medium) var(--transition-timing);
 }
 
-.quick-link:hover .quick-icon {
-  background: #4f46e5;
-  color: #fff;
+.quick-link:hover .quick-icon,
+.quick-link:focus-visible .quick-icon {
+  background: var(--color-primary-600);
+  color: var(--text-inverse);
 }
 
 .link-label {
-  color: #4f46e5;
-  transition: color 0.3s ease;
+  font-weight: 600;
+  color: var(--color-primary-600);
+  transition: color var(--transition-medium) var(--transition-timing);
 }
-.quick-link:hover .link-label {
-  color: #3730a3; 
+
+.quick-link:hover .link-label,
+.quick-link:focus-visible .link-label {
+  color: var(--color-primary-500);
+}
+
+.quick-description {
+  color: var(--text-muted);
+}
+
+html.dark .quick-link,
+.dark .quick-link {
+  background: rgba(15, 23, 42, 0.75);
+  box-shadow: var(--shadow-sm);
+}
+
+html.dark .quick-link:hover,
+.dark .quick-link:hover,
+html.dark .quick-link:focus-visible,
+.dark .quick-link:focus-visible {
+  background: rgba(79, 70, 229, 0.18);
+}
+
+html.dark .link-label,
+.dark .link-label {
+  color: var(--color-primary-300);
+}
+
+html.dark .quick-link:hover .link-label,
+.dark .quick-link:hover .link-label,
+html.dark .quick-link:focus-visible .link-label,
+.dark .quick-link:focus-visible .link-label {
+  color: var(--color-primary-200);
+}
+
+html.dark .quick-description,
+.dark .quick-description {
+  color: color-mix(in srgb, var(--text-muted) 82%, var(--text-body) 18%);
 }
 
 </style>

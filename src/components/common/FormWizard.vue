@@ -172,11 +172,13 @@ defineExpose({
 
 .wizard-progress .progress {
   height: 0.75rem;
-  background-color: rgba(13, 110, 253, 0.1);
+  background: color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  border-radius: var(--radius-pill, 999px);
 }
 
 .wizard-progress .progress-bar {
   transition: width 0.4s ease;
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-400));
 }
 
 .wizard-content {
@@ -184,9 +186,10 @@ defineExpose({
 }
 
 .wizard-step-header {
-  background: #fff;
+  background: color-mix(in srgb, var(--surface-base) 92%, transparent);
   border-radius: 1rem;
-  box-shadow: 0 10px 30px -18px rgba(15, 34, 58, 0.35);
+  border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
+  box-shadow: 0 18px 32px -22px rgba(15, 23, 42, 0.45);
   padding: 1.25rem 1.5rem;
 }
 
@@ -202,9 +205,10 @@ defineExpose({
 }
 
 .wizard-step-panel {
-  background: #fff;
+  background: color-mix(in srgb, var(--surface-base) 96%, transparent);
   border-radius: 1rem;
-  box-shadow: 0 12px 40px -16px rgba(15, 34, 58, 0.25);
+  border: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+  box-shadow: 0 22px 48px -20px rgba(15, 23, 42, 0.32);
   padding: 1.5rem;
 }
 
