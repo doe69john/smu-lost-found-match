@@ -1,15 +1,18 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Form as VForm, Field } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
+import FormWizard from '@/components/common/FormWizard.vue'
 import PulseLoader from '@/components/common/PulseLoader.vue'
 import { useAuth } from '../composables/useAuth'
 import { pushToast } from '../composables/useToast'
 import { useLoadingDelay } from '@/composables/useLoadingDelay'
 import { createLostItem } from '../services/lostItemsService'
-import { createSignedUploadUrl } from '../services/storageService'
+import { uploadFilesSequentially } from '../services/storageService'
+
+const MAX_IMAGES = 3
 
 const categories = [
   'Electronics',
@@ -19,86 +22,220 @@ const categories = [
   'Keys',
   'Wallet',
   'Bag',
+  'Documents',
   'Other'
 ]
 
-const validationSchema = toTypedSchema(
-  z.object({
-    category: z.string().min(1, 'Select a category'),
-    brand: z.string().optional(),
-    model: z.string().optional(),
-    color: z.string().optional(),
-    description: z.string().min(10, 'Description must be at least 10 characters'),
-    location_lost: z.string().min(3, 'Location is required'),
-    date_lost: z.string().min(1, 'Date is required'),
-    time_lost: z.string().optional(),
-    unique_features: z.string().optional()
-  })
-)
-
+const today = new Date()
 const initialValues = {
+  title: '',
   category: '',
   brand: '',
   model: '',
   color: '',
-  description: '',
   location_lost: '',
-  date_lost: '',
-  time_lost: '',
-  unique_features: ''
+  description: '',
+  unique_features: '',
+  date_lost: today.toISOString().split('T')[0],
+  time_lost: ''
 }
 
-const isSubmitting = ref(false)
-const { isVisible: showSubmitLoader } = useLoadingDelay(isSubmitting)
-const uploadProgress = ref(0)
-const uploadError = ref('')
-const selectedFile = ref(null)
-const fileName = ref('')
+const validationSchema = toTypedSchema(
+  z.object({
+    title: z.string().min(3, 'Give the item a short title'),
+    category: z.string().min(1, 'Select a category'),
+    brand: z.string().optional().nullable(),
+    model: z.string().optional().nullable(),
+    color: z.string().optional().nullable(),
+    location_lost: z.string().min(3, 'Where did you lose the item?'),
+    description: z.string().min(20, 'Please provide at least 20 characters.'),
+    unique_features: z.string().optional().nullable(),
+    date_lost: z.string().min(1, 'Date is required'),
+    time_lost: z.string().optional().nullable()
+  })
+)
 
+const formRef = ref(null)
+const wizardRef = ref(null)
 const router = useRouter()
 const { user } = useAuth()
+const imageEntries = ref([])
+const imageError = ref('')
+const isSubmitting = ref(false)
+const submissionError = ref('')
 
-const onFileChange = (event) => {
-  const [file] = event.target.files || []
-  selectedFile.value = file || null
-  fileName.value = file ? file.name : ''
-  uploadProgress.value = 0
-  uploadError.value = ''
+const { isVisible: showSubmitLoader } = useLoadingDelay(isSubmitting)
+
+function toSafeSlug(value, fallback = 'item') {
+  if (!value) return fallback
+  return value
+    .toString()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036F]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase() || fallback
 }
 
-const uploadFileWithProgress = (signedUrl, file) =>
-  new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        uploadProgress.value = Math.round((event.loaded / event.total) * 100)
-      }
-    }
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        uploadProgress.value = 100
-        resolve()
-      } else {
-        reject(new Error(xhr.responseText || 'Upload failed.'))
-      }
-    }
-    xhr.onerror = () => reject(new Error('Upload failed. Please try again.'))
-    xhr.open('PUT', signedUrl, true)
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
-    xhr.send(file)
-  })
+const canAddMoreImages = computed(() => imageEntries.value.length < MAX_IMAGES)
+const remainingImages = computed(() => Math.max(0, MAX_IMAGES - imageEntries.value.length))
 
-const normalizeValues = (values) => {
-  const normalized = { ...values }
-  Object.keys(normalized).forEach((key) => {
-    if (normalized[key] === '') {
-      normalized[key] = null
-    }
-  })
-  return normalized
+function resetFileInput(event) {
+  if (event?.target) {
+    event.target.value = ''
+  }
 }
 
-const onSubmit = async (values, { resetForm }) => {
+function handleFilesSelected(event) {
+  const files = Array.from(event.target?.files || [])
+  resetFileInput(event)
+
+  if (!files.length) return
+
+  if (!canAddMoreImages.value) {
+    pushToast({
+      title: 'Image limit reached',
+      message: `You can upload up to ${MAX_IMAGES} images. Remove one to add another.`,
+      variant: 'warning'
+    })
+    return
+  }
+
+  const availableSlots = remainingImages.value
+  const selectedFiles = files.slice(0, availableSlots)
+
+  selectedFiles.forEach((file) => {
+    if (!file.type?.startsWith('image/')) {
+      pushToast({
+        title: 'Unsupported file',
+        message: `${file.name} is not an image file.`,
+        variant: 'danger'
+      })
+      return
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+    imageEntries.value.push({
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      file,
+      previewUrl,
+      progress: 0
+    })
+  })
+
+  if (files.length > selectedFiles.length) {
+    pushToast({
+      title: 'Images trimmed',
+      message: `Only the first ${availableSlots} image(s) were added to stay within the ${MAX_IMAGES}-image limit.`,
+      variant: 'info'
+    })
+  }
+}
+
+function removeImage(index) {
+  const [removed] = imageEntries.value.splice(index, 1)
+  if (removed?.previewUrl) {
+    URL.revokeObjectURL(removed.previewUrl)
+  }
+}
+
+onBeforeUnmount(() => {
+  imageEntries.value.forEach((entry) => {
+    if (entry.previewUrl) {
+      URL.revokeObjectURL(entry.previewUrl)
+    }
+  })
+})
+
+async function validateFields(fieldNames) {
+  if (!formRef.value) return true
+  const results = await Promise.all(fieldNames.map((field) => formRef.value?.validateField(field)))
+  return results.every((result) => result?.valid !== false)
+}
+
+async function validateImagesStep() {
+  imageError.value = ''
+  if (!imageEntries.value.length) {
+    imageError.value = 'Add at least one photo of the item.'
+    return false
+  }
+  return true
+}
+
+const validateBasicsStep = () => validateFields(['title', 'category', 'brand', 'model', 'color'])
+const validateLocationStep = () => validateFields(['location_lost'])
+const validateDetailsStep = () => validateFields(['description', 'unique_features'])
+const validateScheduleStep = () => validateFields(['date_lost', 'time_lost'])
+
+const wizardSteps = computed(() => [
+  {
+    id: 'images',
+    title: 'Add photos',
+    description: 'Upload up to 3 clear images',
+    beforeNext: validateImagesStep
+  },
+  {
+    id: 'basics',
+    title: 'Item basics',
+    description: 'Title, category & brand',
+    beforeNext: validateBasicsStep
+  },
+  {
+    id: 'location',
+    title: 'Where it was lost',
+    description: 'Share the exact place',
+    beforeNext: validateLocationStep
+  },
+  {
+    id: 'details',
+    title: 'Describe the item',
+    description: 'Share distinctive details',
+    beforeNext: validateDetailsStep
+  },
+  {
+    id: 'timing',
+    title: 'Date & time',
+    description: 'When it went missing',
+    beforeNext: validateScheduleStep
+  },
+  {
+    id: 'review',
+    title: 'Review & submit',
+    description: 'Confirm everything looks right'
+  }
+])
+
+function stripLegacyImageUrlFields(target) {
+  if (!target || typeof target !== 'object') return
+  Object.keys(target).forEach((key) => {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '')
+    if (normalizedKey === 'imageurl') {
+      delete target[key]
+    }
+  })
+}
+
+async function handleWizardComplete(submitHandler) {
+  if (isSubmitting.value) return
+  if (typeof submitHandler !== 'function') {
+    if (import.meta.env.DEV) {
+      console.warn('VForm submit helper was not provided to handleWizardComplete')
+    }
+    return
+  }
+
+  try {
+    await submitHandler()
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('Submission handler rejected', error)
+    }
+    throw error
+  }
+}
+
+async function onSubmit(values, { resetForm }) {
   if (!user.value?.id) {
     pushToast({
       title: 'Authentication required',
@@ -109,46 +246,76 @@ const onSubmit = async (values, { resetForm }) => {
     return
   }
 
+  submissionError.value = ''
   isSubmitting.value = true
-  uploadProgress.value = 0
-  uploadError.value = ''
 
   try {
-    let imagePath = null
-    if (selectedFile.value) {
-      const extension = selectedFile.value.name.split('.').pop() || 'jpg'
-      const storagePath = `${user.value.id}/lost/${Date.now()}.${extension}`
-      const { signedUrl, path } = await createSignedUploadUrl({ path: storagePath, upsert: true })
-      await uploadFileWithProgress(signedUrl, selectedFile.value)
-      imagePath = path
-    }
+    const files = imageEntries.value.map((entry) => entry.file)
+    const timestamp = Date.now()
 
-    const payload = normalizeValues(values)
-    payload.user_id = user.value.id
-    if (imagePath) {
-      payload.image_path = imagePath
-      payload.image_filename = selectedFile.value?.name || null
-    }
+    imageEntries.value = imageEntries.value.map((entry) => ({ ...entry, progress: 0 }))
 
-    await createLostItem(payload)
+    const imageMetadata = await uploadFilesSequentially(files, {
+      buildPath: (file, index) => {
+        const extension = file.name?.split('.').pop()?.toLowerCase() || 'jpg'
+        const baseName = toSafeSlug(file.name?.replace(/\.[^.]+$/, '') || `image-${index}`)
+        return `${user.value.id}/lost/${timestamp}-${index + 1}-${baseName}.${extension}`
+      },
+      onFileStart: ({ index }) => {
+        if (imageEntries.value[index]) {
+          imageEntries.value[index].progress = 5
+        }
+      },
+      onFileProgress: ({ index, percentage }) => {
+        if (imageEntries.value[index]) {
+          imageEntries.value[index].progress = Math.min(percentage, 100)
+        }
+      },
+      onFileComplete: ({ index }) => {
+        if (imageEntries.value[index]) {
+          imageEntries.value[index].progress = 100
+        }
+      }
+    })
+
+    const submissionValues = { ...values }
+    const title = submissionValues.title
+
+    delete submissionValues.title
+    stripLegacyImageUrlFields(submissionValues)
+
+    submissionValues.model = submissionValues.model || title
+    submissionValues.user_id = user.value.id
+    submissionValues.image_metadata = imageMetadata
+
+    Object.keys(submissionValues).forEach((key) => {
+      if (submissionValues[key] === '') {
+        submissionValues[key] = null
+      }
+    })
+
+    await createLostItem(submissionValues)
 
     pushToast({
       title: 'Report submitted',
-      message: 'Thank you. Your lost item report has been saved.',
+      message: 'Thanks! Your lost item report has been saved.',
       variant: 'success'
     })
 
     resetForm({ values: { ...initialValues } })
-    selectedFile.value = null
-    fileName.value = ''
-    uploadProgress.value = 0
+    imageEntries.value.forEach((entry) => {
+      if (entry.previewUrl) {
+        URL.revokeObjectURL(entry.previewUrl)
+      }
+    })
+    imageEntries.value = []
 
     router.push({ name: 'browse-lost' })
   } catch (error) {
-    uploadError.value = error?.message || 'Unable to submit the report. Please try again.'
+    submissionError.value = error?.message || 'Unable to submit the report. Please try again.'
     pushToast({
       title: 'Submission failed',
-      message: uploadError.value,
+      message: submissionError.value,
       variant: 'danger'
     })
   } finally {
@@ -160,201 +327,386 @@ const onSubmit = async (values, { resetForm }) => {
 <template>
   <section class="d-grid gap-4">
     <header>
-      <h1 class="h3 fw-semibold mb-1">Report a lost item</h1>
-      <p class="text-muted mb-0">Provide as much detail as possible to help us locate your belongings.</p>
+      <h1 class="h3 fw-semibold mb-0">Report a lost item</h1>
     </header>
 
-    <VForm :validation-schema="validationSchema" :initial-values="initialValues" @submit="onSubmit">
-      <template #default>
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="lost-category">Category *</label>
-            <Field name="category" v-slot="{ field, errorMessage }">
-              <select
-                id="lost-category"
-                class="form-select"
-                :class="{ 'is-invalid': errorMessage }"
-                v-bind="field"
-              >
-                <option value="">Select category</option>
-                <option v-for="category in categories" :key="category" :value="category">
-                  {{ category }}
-                </option>
-              </select>
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
+    <VForm
+      ref="formRef"
+      :validation-schema="validationSchema"
+      :initial-values="initialValues"
+      @submit="onSubmit"
+    >
+      <template #default="{ values, handleSubmit }">
+        <FormWizard
+          ref="wizardRef"
+          :steps="wizardSteps"
+          finish-label="Submit report"
+          @complete="() => handleWizardComplete(handleSubmit(onSubmit))"
+        >
+          <template #default="{ step }">
+            <div v-if="step?.id === 'images'" class="d-grid gap-3">
+              <div class="upload-helper text-center">
+                <div class="d-grid gap-2">
+                  <span class="fw-semibold">Upload photos</span>
+                  <p class="text-muted mb-0">
+                    Use your camera or photo library to add up to {{ MAX_IMAGES }} clear images.
+                  </p>
+                  <div class="d-flex justify-content-center">
+                    <label class="btn btn-outline-primary d-inline-flex align-items-center gap-2 mb-0">
+                      <i class="bi bi-camera"></i>
+                      <span>{{ canAddMoreImages ? 'Add photos' : 'Limit reached' }}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        multiple
+                        class="d-none"
+                        :disabled="!canAddMoreImages || isSubmitting"
+                        @change="handleFilesSelected"
+                      />
+                    </label>
+                  </div>
+                  <small class="text-muted">{{ remainingImages }} picture(s) remaining</small>
+                </div>
+              </div>
 
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="lost-brand">Brand</label>
-            <Field name="brand" v-slot="{ field, errorMessage }">
-              <input
-                id="lost-brand"
-                type="text"
-                class="form-control"
-                :class="{ 'is-invalid': errorMessage }"
-                placeholder="e.g. Apple, Samsonite"
-                v-bind="field"
-              />
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
+              <p v-if="imageError" class="text-danger small mb-0">{{ imageError }}</p>
 
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="lost-model">Model</label>
-            <Field name="model" v-slot="{ field, errorMessage }">
-              <input
-                id="lost-model"
-                type="text"
-                class="form-control"
-                :class="{ 'is-invalid': errorMessage }"
-                placeholder="e.g. iPhone 15, AirPods"
-                v-bind="field"
-              />
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
-
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="lost-color">Colour</label>
-            <Field name="color" v-slot="{ field, errorMessage }">
-              <input
-                id="lost-color"
-                type="text"
-                class="form-control"
-                :class="{ 'is-invalid': errorMessage }"
-                placeholder="e.g. Black, Blue"
-                v-bind="field"
-              />
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
-
-          <div class="col-12">
-            <label class="form-label" for="lost-description">Description *</label>
-            <Field name="description" v-slot="{ field, errorMessage }">
-              <textarea
-                id="lost-description"
-                rows="4"
-                class="form-control"
-                :class="{ 'is-invalid': errorMessage }"
-                placeholder="Share details that can help someone recognise your item."
-                v-bind="field"
-              ></textarea>
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
-
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="lost-location">Where was it lost? *</label>
-            <Field name="location_lost" v-slot="{ field, errorMessage }">
-              <input
-                id="lost-location"
-                type="text"
-                class="form-control"
-                :class="{ 'is-invalid': errorMessage }"
-                placeholder="e.g. Li Ka Shing Library Level 3"
-                v-bind="field"
-              />
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
-
-          <div class="col-12 col-md-3">
-            <label class="form-label" for="lost-date">Date lost *</label>
-            <Field name="date_lost" v-slot="{ field, errorMessage }">
-              <input
-                id="lost-date"
-                type="date"
-                class="form-control"
-                :class="{ 'is-invalid': errorMessage }"
-                v-bind="field"
-              />
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
-
-          <div class="col-12 col-md-3">
-            <label class="form-label" for="lost-time">Approximate time</label>
-            <Field name="time_lost" v-slot="{ field, errorMessage }">
-              <input
-                id="lost-time"
-                type="time"
-                class="form-control"
-                :class="{ 'is-invalid': errorMessage }"
-                v-bind="field"
-              />
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
-
-          <div class="col-12">
-            <label class="form-label" for="lost-unique">Unique features</label>
-            <Field name="unique_features" v-slot="{ field, errorMessage }">
-              <textarea
-                id="lost-unique"
-                rows="3"
-                class="form-control"
-                :class="{ 'is-invalid': errorMessage }"
-                placeholder="Stickers, engravings or other identifying marks"
-                v-bind="field"
-              ></textarea>
-              <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
-            </Field>
-          </div>
-
-          <div class="col-12">
-            <label class="form-label" for="lost-photo">Upload a photo (optional)</label>
-            <div class="file-input">
-              <input
-                id="lost-photo"
-                type="file"
-                accept="image/*"
-                class="file-input__native"
-                :disabled="isSubmitting"
-                @change="onFileChange"
-              />
-              <label
-                class="file-input__trigger"
-                :class="{ 'is-disabled': isSubmitting }"
-                for="lost-photo"
-                :aria-disabled="isSubmitting ? 'true' : 'false'"
-              >
-                <i class="bi bi-upload" aria-hidden="true"></i>
-                <span>{{ fileName ? 'Change photo' : 'Choose file' }}</span>
-              </label>
-              <span class="file-input__name" :class="{ 'is-empty': !fileName }">
-                {{ fileName || 'No file selected yet' }}
-              </span>
+              <div v-if="imageEntries.length" class="d-grid gap-3">
+                <article
+                  v-for="(entry, index) in imageEntries"
+                  :key="entry.id"
+                  class="card border shadow-sm overflow-hidden"
+                >
+                  <div class="ratio ratio-4x3 upload-preview">
+                    <img :src="entry.previewUrl" :alt="`Selected image ${index + 1}`" class="object-fit-cover" />
+                  </div>
+                  <div class="card-body d-grid gap-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <span class="fw-semibold">Image {{ index + 1 }}</span>
+                    </div>
+                    <div
+                      v-if="isSubmitting || (entry.progress > 0 && entry.progress < 100)"
+                      class="progress"
+                      role="progressbar"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      :aria-valuenow="entry.progress"
+                    >
+                      <div
+                        class="progress-bar"
+                        :class="{ 'progress-bar-striped progress-bar-animated': isSubmitting && entry.progress < 100 }"
+                        :style="{ width: `${entry.progress}%` }"
+                      >
+                        <span class="visually-hidden">{{ entry.progress }}% uploaded</span>
+                      </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <small class="text-muted text-truncate w-75" :title="entry.file?.name">{{ entry.file?.name }}</small>
+                      <button
+                        type="button"
+                        class="btn btn-link text-danger p-0"
+                        :disabled="isSubmitting"
+                        @click="removeImage(index)"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              </div>
             </div>
-            <small class="text-muted d-block mt-2">Clear photos speed up the matching process.</small>
-            <div v-if="selectedFile && uploadProgress > 0" class="progress mt-2" style="height: 8px;">
-              <div
-                class="progress-bar"
-                role="progressbar"
-                :style="{ width: `${uploadProgress}%` }"
-                :aria-valuenow="uploadProgress"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              ></div>
-            </div>
-            <div v-if="uploadError" class="text-danger small mt-2">{{ uploadError }}</div>
-          </div>
-        </div>
 
-        <div class="d-flex justify-content-end mt-4">
-          <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-            <PulseLoader
-              v-if="showSubmitLoader"
-              size="sm"
-              contrast="inverted"
-              class="me-2"
-              aria-hidden="true"
-            />
-            {{ isSubmitting ? 'Submitting report...' : 'Submit report' }}
-          </button>
-        </div>
+            <div v-else-if="step?.id === 'basics'" class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="lost-title">Item title *</label>
+                <Field name="title" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <input
+                    id="lost-title"
+                    type="text"
+                    class="form-control"
+                    :class="{ 'is-invalid': errorMessage }"
+                    placeholder="e.g. Silver laptop, Blue backpack"
+                    v-bind="field"
+                  />
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="lost-category">Category *</label>
+                <Field name="category" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <select
+                    id="lost-category"
+                    class="form-select"
+                    :class="{ 'is-invalid': errorMessage }"
+                    v-bind="field"
+                  >
+                    <option value="">Select category</option>
+                    <option v-for="category in categories" :key="category" :value="category">
+                      {{ category }}
+                    </option>
+                  </select>
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="lost-brand">Brand</label>
+                <Field name="brand" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <input
+                    id="lost-brand"
+                    type="text"
+                    class="form-control"
+                    :class="{ 'is-invalid': errorMessage }"
+                    placeholder="e.g. Apple, Samsonite"
+                    v-bind="field"
+                  />
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="lost-model">Model or variant</label>
+                <Field name="model" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <input
+                    id="lost-model"
+                    type="text"
+                    class="form-control"
+                    :class="{ 'is-invalid': errorMessage }"
+                    placeholder="e.g. MacBook Pro 14, Longchamp Le Pliage"
+                    v-bind="field"
+                  />
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="lost-color">Color</label>
+                <Field name="color" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <input
+                    id="lost-color"
+                    type="text"
+                    class="form-control"
+                    :class="{ 'is-invalid': errorMessage }"
+                    placeholder="e.g. Navy blue"
+                    v-bind="field"
+                  />
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+            </div>
+
+            <div v-else-if="step?.id === 'location'" class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="lost-location">Where did you lose it? *</label>
+                <Field name="location_lost" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <textarea
+                    id="lost-location"
+                    class="form-control"
+                    rows="3"
+                    :class="{ 'is-invalid': errorMessage }"
+                    placeholder="e.g. Outside LKCSB atrium near the benches"
+                    v-bind="field"
+                  ></textarea>
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+            </div>
+
+            <div v-else-if="step?.id === 'details'" class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="lost-description">Description *</label>
+                <Field name="description" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <textarea
+                    id="lost-description"
+                    class="form-control"
+                    rows="4"
+                    :class="{ 'is-invalid': errorMessage }"
+                    placeholder="Describe any markings, contents or other details that make it unique"
+                    v-bind="field"
+                  ></textarea>
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="lost-unique">Unique identifiers</label>
+                <Field name="unique_features" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <textarea
+                    id="lost-unique"
+                    class="form-control"
+                    rows="3"
+                    :class="{ 'is-invalid': errorMessage }"
+                    placeholder="Serial numbers, stickers, charms or other distinguishing features"
+                    v-bind="field"
+                  ></textarea>
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+            </div>
+
+            <div v-else-if="step?.id === 'timing'" class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="lost-date">Date lost *</label>
+                <Field name="date_lost" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <input
+                    id="lost-date"
+                    type="date"
+                    class="form-control"
+                    :class="{ 'is-invalid': errorMessage }"
+                    v-bind="field"
+                  />
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="lost-time">Time lost</label>
+                <Field name="time_lost" :keep-value="true" v-slot="{ field, errorMessage }">
+                  <input
+                    id="lost-time"
+                    type="time"
+                    class="form-control"
+                    :class="{ 'is-invalid': errorMessage }"
+                    v-bind="field"
+                  />
+                  <div v-if="errorMessage" class="invalid-feedback d-block">{{ errorMessage }}</div>
+                </Field>
+              </div>
+            </div>
+
+            <div v-else-if="step?.id === 'review'" class="d-grid gap-3">
+              <div class="row g-3">
+                <div class="col-12 col-lg-8">
+                  <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-grid gap-2">
+                      <h2 class="h5 fw-semibold mb-2">Report summary</h2>
+                      <dl class="row mb-0">
+                        <dt class="col-sm-4">Title</dt>
+                        <dd class="col-sm-8">{{ values.title }}</dd>
+                        <dt class="col-sm-4">Category</dt>
+                        <dd class="col-sm-8">{{ values.category }}</dd>
+                        <dt class="col-sm-4">Brand</dt>
+                        <dd class="col-sm-8">{{ values.brand || 'Not specified' }}</dd>
+                        <dt class="col-sm-4">Model</dt>
+                        <dd class="col-sm-8">{{ values.model || values.title || 'Not specified' }}</dd>
+                        <dt class="col-sm-4">Color</dt>
+                        <dd class="col-sm-8">{{ values.color || 'Not specified' }}</dd>
+                        <dt class="col-sm-4">Location</dt>
+                        <dd class="col-sm-8">{{ values.location_lost }}</dd>
+                        <dt class="col-sm-4">Lost on</dt>
+                        <dd class="col-sm-8">
+                          {{ values.date_lost }}<span v-if="values.time_lost"> at {{ values.time_lost }}</span>
+                        </dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12 col-lg-4">
+                  <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-grid gap-3">
+                      <h2 class="h6 fw-semibold mb-0">Photos</h2>
+                      <p v-if="!imageEntries.length" class="text-muted mb-0">No images attached.</p>
+                      <div v-else class="d-grid gap-2">
+                        <div v-for="(entry, index) in imageEntries" :key="entry.id" class="ratio ratio-4x3 rounded overflow-hidden border">
+                          <img :src="entry.previewUrl" :alt="`Image ${index + 1}`" class="object-fit-cover" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                  <h2 class="h6 fw-semibold">Description</h2>
+                  <p class="mb-2">{{ values.description }}</p>
+                  <h3 class="h6 fw-semibold">Unique identifiers</h3>
+                  <p class="mb-0">{{ values.unique_features || 'None provided.' }}</p>
+                </div>
+              </div>
+
+              <p v-if="submissionError" class="text-danger mb-0">{{ submissionError }}</p>
+            </div>
+          </template>
+
+          <template #footer="{ isFirst, isLast, goNext, goPrevious }">
+            <div class="d-flex w-100 gap-3">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                :disabled="isFirst || isSubmitting"
+                @click="goPrevious"
+              >
+                Back
+              </button>
+              <div class="ms-auto">
+                <button
+                  v-if="!isLast"
+                  type="button"
+                  class="btn btn-primary"
+                  :disabled="isSubmitting"
+                  @click="goNext"
+                >
+                  Next step
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="btn btn-primary d-inline-flex align-items-center gap-2"
+                  :disabled="isSubmitting"
+                  @click="() => handleWizardComplete(handleSubmit(onSubmit))"
+                >
+                  <PulseLoader v-if="showSubmitLoader" size="sm" />
+                  <span>{{ isSubmitting ? 'Submitting…' : 'Submit report' }}</span>
+                </button>
+              </div>
+            </div>
+          </template>
+        </FormWizard>
       </template>
     </VForm>
   </section>
 </template>
+
+<style scoped>
+.upload-helper {
+  padding: clamp(1.75rem, 2vw + 1.25rem, 3rem);
+  border-radius: var(--radius-xl);
+  border: 1.6px dashed color-mix(in srgb, var(--color-border) 85%, transparent);
+  background: color-mix(in srgb, var(--surface-base) 94%, transparent);
+  box-shadow: 0 22px 36px -26px rgba(15, 23, 42, 0.45);
+  display: grid;
+  gap: var(--space-md);
+  justify-items: center;
+  transition: background var(--transition-medium) var(--transition-timing),
+    border-color var(--transition-medium) var(--transition-timing),
+    box-shadow var(--transition-medium) var(--transition-timing);
+}
+
+.upload-helper .btn {
+  white-space: nowrap;
+}
+
+.upload-helper small,
+.upload-helper .text-muted {
+  color: var(--text-muted) !important;
+}
+
+.upload-preview {
+  background: color-mix(in srgb, var(--surface-muted) 80%, transparent);
+  border-radius: var(--radius-lg);
+}
+
+.upload-preview img {
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-helper {
+    transition: none;
+  }
+}
+</style>

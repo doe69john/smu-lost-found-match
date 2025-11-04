@@ -1,5 +1,6 @@
 import httpClient from './httpClient'
 import { normalizeSupabaseError } from '../utils/normalizeSupabaseError'
+import { DEFAULT_STORAGE_BUCKET } from './storageService'
 
 const LOST_ITEMS_PATH = '/rest/v1/lost_items'
 
@@ -71,9 +72,51 @@ export async function fetchLostItemById(id, { select = '*' } = {}) {
   }
 }
 
+function normalizeLostItemPayload(payload = {}) {
+  const normalized = Object.keys(payload).reduce((acc, key) => {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '')
+    if (normalizedKey === 'imageurl') {
+      return acc
+    }
+    acc[key] = payload[key]
+    return acc
+  }, {})
+
+  const candidateMetadata = (() => {
+    if (Array.isArray(payload.image_metadata)) return payload.image_metadata
+    if (Array.isArray(payload.imageMetadata)) return payload.imageMetadata
+    if (Array.isArray(payload.images)) return payload.images
+    return null
+  })()
+
+  delete normalized.image_metadata
+  delete normalized.imageMetadata
+  delete normalized.images
+
+  if (candidateMetadata) {
+    const normalizedMetadata = candidateMetadata
+      .map((image) => ({
+        path: image.path,
+        original_filename: image.originalName || image.original_filename || null,
+        bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,
+        mime_type: image.mimeType || image.mime_type || null,
+        size: image.size ?? null
+      }))
+      .filter((image) => Boolean(image.path))
+
+    if (normalizedMetadata.length > 0) {
+      normalized.image_metadata = normalizedMetadata
+    }
+  }
+
+  return normalized
+}
+
 export async function createLostItem(payload) {
   try {
-    const { data } = await httpClient.post(LOST_ITEMS_PATH, payload, {
+    const normalizedPayload = normalizeLostItemPayload(payload)
+
+    const { data } = await httpClient.post(LOST_ITEMS_PATH, normalizedPayload, {
       headers: { Prefer: 'return=representation' }
     })
 
@@ -90,9 +133,11 @@ export async function createLostItem(payload) {
 
 export async function updateLostItem(id, updates) {
   try {
+    const normalizedUpdates = normalizeLostItemPayload(updates)
+
     const { data } = await httpClient.patch(
       `${LOST_ITEMS_PATH}?id=eq.${id}`,
-      updates,
+      normalizedUpdates,
       {
         headers: { Prefer: 'return=representation' }
       }
