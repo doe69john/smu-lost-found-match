@@ -73,40 +73,30 @@ export async function fetchLostItemById(id, { select = '*' } = {}) {
 }
 
 function normalizeLostItemPayload(payload = {}) {
-  const normalized = { ...payload }
+  const {
+    image_url: legacySnakeImageUrl,
+    imageUrl: legacyCamelImageUrl,
+    images,
+    imageMetadata,
+    image_metadata,
+    ...rest
+  } = payload
 
-  if ('image_url' in normalized) {
-    delete normalized.image_url
+  const normalized = { ...rest }
+
+  if (legacySnakeImageUrl !== undefined || legacyCamelImageUrl !== undefined) {
+    // Legacy single-image fields are intentionally dropped in favor of image_metadata.
   }
 
-  if ('imageUrl' in normalized) {
-    delete normalized.imageUrl
-  }
+  const candidateMetadata = (() => {
+    if (Array.isArray(image_metadata)) return image_metadata
+    if (Array.isArray(imageMetadata)) return imageMetadata
+    if (Array.isArray(images)) return images
+    return null
+  })()
 
-  if (Array.isArray(payload.images)) {
-    normalized.image_metadata = payload.images.map((image) => ({
-      path: image.path,
-      original_filename: image.originalName || image.original_filename || null,
-      bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,
-      mime_type: image.mimeType || image.mime_type || null,
-      size: image.size ?? null
-    }))
-    delete normalized.images
-  }
-
-  if (Array.isArray(payload.imageMetadata)) {
-    normalized.image_metadata = payload.imageMetadata.map((image) => ({
-      path: image.path,
-      original_filename: image.originalName || image.original_filename || null,
-      bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,
-      mime_type: image.mimeType || image.mime_type || null,
-      size: image.size ?? null
-    }))
-    delete normalized.imageMetadata
-  }
-
-  if (Array.isArray(payload.image_metadata)) {
-    normalized.image_metadata = payload.image_metadata.map((image) => ({
+  if (candidateMetadata) {
+    normalized.image_metadata = candidateMetadata.map((image) => ({
       path: image.path,
       original_filename: image.originalName || image.original_filename || null,
       bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,

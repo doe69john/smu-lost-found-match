@@ -272,6 +272,8 @@ async function onSubmit(values, { resetForm }) {
     const title = submissionValues.title
 
     delete submissionValues.title
+    delete submissionValues.image_url
+    delete submissionValues.imageUrl
 
     submissionValues.model = submissionValues.model || title
     submissionValues.user_id = user.value.id
