@@ -269,17 +269,13 @@ async function onSubmit(values, { resetForm }) {
     })
 
     const submissionValues = { ...values }
-    const primaryImage = imageMetadata[0] || null
     const title = submissionValues.title
 
     delete submissionValues.title
 
     submissionValues.model = submissionValues.model || title
     submissionValues.user_id = user.value.id
-
-    if (primaryImage) {
-      submissionValues.image_url = primaryImage.path
-    }
+    submissionValues.image_metadata = imageMetadata
 
     Object.keys(submissionValues).forEach((key) => {
       if (submissionValues[key] === '') {
