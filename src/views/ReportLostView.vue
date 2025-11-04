@@ -206,6 +206,16 @@ const wizardSteps = computed(() => [
   }
 ])
 
+function stripLegacyImageUrlFields(target) {
+  if (!target || typeof target !== 'object') return
+  Object.keys(target).forEach((key) => {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '')
+    if (normalizedKey === 'imageurl') {
+      delete target[key]
+    }
+  })
+}
+
 async function handleWizardComplete(submitHandler) {
   if (isSubmitting.value) return
   if (typeof submitHandler !== 'function') {
@@ -272,8 +282,7 @@ async function onSubmit(values, { resetForm }) {
     const title = submissionValues.title
 
     delete submissionValues.title
-    delete submissionValues.image_url
-    delete submissionValues.imageUrl
+    stripLegacyImageUrlFields(submissionValues)
 
     submissionValues.model = submissionValues.model || title
     submissionValues.user_id = user.value.id

@@ -73,36 +73,40 @@ export async function fetchLostItemById(id, { select = '*' } = {}) {
 }
 
 function normalizeLostItemPayload(payload = {}) {
-  const {
-    image_url: legacySnakeImageUrl,
-    imageUrl: legacyCamelImageUrl,
-    images,
-    imageMetadata,
-    image_metadata,
-    ...rest
-  } = payload
-
-  const normalized = { ...rest }
-
-  if (legacySnakeImageUrl !== undefined || legacyCamelImageUrl !== undefined) {
-    // Legacy single-image fields are intentionally dropped in favor of image_metadata.
-  }
+  const normalized = Object.keys(payload).reduce((acc, key) => {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '')
+    if (normalizedKey === 'imageurl') {
+      return acc
+    }
+    acc[key] = payload[key]
+    return acc
+  }, {})
 
   const candidateMetadata = (() => {
-    if (Array.isArray(image_metadata)) return image_metadata
-    if (Array.isArray(imageMetadata)) return imageMetadata
-    if (Array.isArray(images)) return images
+    if (Array.isArray(payload.image_metadata)) return payload.image_metadata
+    if (Array.isArray(payload.imageMetadata)) return payload.imageMetadata
+    if (Array.isArray(payload.images)) return payload.images
     return null
   })()
 
+  delete normalized.image_metadata
+  delete normalized.imageMetadata
+  delete normalized.images
+
   if (candidateMetadata) {
-    normalized.image_metadata = candidateMetadata.map((image) => ({
-      path: image.path,
-      original_filename: image.originalName || image.original_filename || null,
-      bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,
-      mime_type: image.mimeType || image.mime_type || null,
-      size: image.size ?? null
-    }))
+    const normalizedMetadata = candidateMetadata
+      .map((image) => ({
+        path: image.path,
+        original_filename: image.originalName || image.original_filename || null,
+        bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,
+        mime_type: image.mimeType || image.mime_type || null,
+        size: image.size ?? null
+      }))
+      .filter((image) => Boolean(image.path))
+
+    if (normalizedMetadata.length > 0) {
+      normalized.image_metadata = normalizedMetadata
+    }
   }
 
   return normalized
