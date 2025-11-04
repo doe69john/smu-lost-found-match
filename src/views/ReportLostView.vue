@@ -278,10 +278,7 @@ async function onSubmit(values, { resetForm }) {
     submissionValues.user_id = user.value.id
 
     if (primaryImage) {
-      submissionValues.image_path = primaryImage.path
       submissionValues.image_url = primaryImage.path
-      submissionValues.image_filename =
-        primaryImage.originalName || primaryImage.original_filename || null
     }
 
     Object.keys(submissionValues).forEach((key) => {
