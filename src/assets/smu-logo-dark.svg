@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 80" role="img" aria-labelledby="title desc">
+  <title id="title">Singapore Management University logo for dark backgrounds</title>
+  <desc id="desc">Stylised Singapore Management University mark with light lettering for dark surfaces.</desc>
+  <defs>
+    <linearGradient id="smu-gold-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e7c986" />
+      <stop offset="100%" stop-color="#c79b3b" />
+    </linearGradient>
+    <linearGradient id="smu-blue-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3759a5" />
+      <stop offset="100%" stop-color="#0a1d47" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(10 10)">
+    <path d="M32 0C18.7 0 8 9.4 8 23.4c0 12.3 7.7 19.5 17.6 24.8 7 3.8 11.7 7 14.6 12.7 2.3 4.5 3.6 9.4 3.6 15.1h13.3c0-9.1-2.2-17.1-6.2-23.6-5.1-8.3-13.1-12.6-19-16.1-6.9-4.2-10.9-8-10.9-14.1 0-6.9 5-11.8 12-11.8 6.2 0 11.9 4.3 15.8 11.2l11.9-7C58.9 6 46.5 0 32 0z" fill="url(#smu-blue-dark)"/>
+    <path d="M76 7c-10.7 0-18.7 5.8-23.4 16.4l11.8 5.6c2.9-6.9 6.8-9.8 11.4-9.8 5 0 8.9 3.4 8.9 8.2 0 5.3-4.4 9.3-12.7 14.7-12.7 8.3-19.4 17.1-21.6 27h13.6c1.9-6.5 6.7-12.4 15.2-18.1 12.3-8 19-15.3 19-25.6C97.2 16 88.3 7 76 7z" fill="url(#smu-gold-dark)"/>
+    <circle cx="93" cy="14" r="6" fill="#f9e3b0"/>
+  </g>
+  <g transform="translate(140 24)" fill="#f4f6fb" font-family="'Playfair Display', 'Times New Roman', serif">
+    <text font-size="36" font-weight="700" letter-spacing="4">SMU</text>
+    <text y="26" x="-60" font-size="14" font-weight="500" letter-spacing="1.5">SINGAPORE MANAGEMENT UNIVERSITY</text>
+  </g>
+</svg>

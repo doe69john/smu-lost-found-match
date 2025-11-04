@@ -4,6 +4,8 @@ import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 import { pushToast } from '../../composables/useToast'
 import { useTheme } from '../../composables/useTheme'
+import smuLogoLight from '../../assets/smu-logo-light.svg'
+import smuLogoDark from '../../assets/smu-logo-dark.svg'
 
 const { isAuthenticated: authStatus, user, logout } = useAuth()
 const router = useRouter()
@@ -93,6 +95,7 @@ watch(
 
 // Theme toggle
 const { isDark, toggleTheme } = useTheme()
+const brandLogo = computed(() => (isDark.value ? smuLogoDark : smuLogoLight))
 </script>
 
 <template>
@@ -101,7 +104,13 @@ const { isDark, toggleTheme } = useTheme()
     <div class="app-header__bar app-header__bar--top">
       <div class="app-header__brand">
         <RouterLink class="app-header__logo" to="/" aria-label="Go to home">
-          Lost &amp; Found Portal
+          <span class="app-header__logo-mark" aria-hidden="true">
+            <img :src="brandLogo" alt="" />
+          </span>
+          <span class="app-header__logo-copy">
+            <span class="app-header__logo-title">Lost &amp; Found</span>
+            <span class="app-header__logo-subtitle">Singapore Management University</span>
+          </span>
         </RouterLink>
       </div>
 
@@ -179,23 +188,40 @@ const { isDark, toggleTheme } = useTheme()
       <div class="app-header__auth">
         <button
           type="button"
-          class="app-header__ghost-button"
+          class="app-header__ghost-button app-header__theme-toggle"
           aria-label="Toggle theme"
           title="Toggle theme"
           @click="toggleTheme"
         >
-          <span v-if="isDark" aria-hidden="true" style="display:inline-flex;align-items:center;gap:.35rem;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21.64 13.64A9 9 0 1 1 10.36 2.36 7 7 0 0 0 21.64 13.64z"/>
+          <span class="app-header__theme-icon" aria-hidden="true">
+            <svg
+              v-if="isDark"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M21.64 13.64A9 9 0 1 1 10.36 2.36 7 7 0 0 0 21.64 13.64z" />
             </svg>
-            Dark
-          </span>
-          <span v-else aria-hidden="true" style="display:inline-flex;align-items:center;gap:.35rem;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 4V2m0 20v-2m8-8h2M2 12h2m13.657 6.343l1.414 1.414M4.929 4.929l1.414 1.414m0 11.314l-1.414 1.414M19.071 4.929l-1.414 1.414M12 6a6 6 0 100 12 6 6 0 000-12z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <svg
+              v-else
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 4V2m0 20v-2m8-8h2M2 12h2m13.657 6.343l1.414 1.414M4.929 4.929l1.414 1.414m0 11.314l-1.414 1.414M19.071 4.929l-1.414 1.414M12 6a6 6 0 100 12 6 6 0 000-12z"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+              />
             </svg>
-            Light
           </span>
+          <span class="app-header__theme-label">{{ isDark ? 'Light mode' : 'Dark mode' }}</span>
         </button>
 
         <div v-if="!isLoggedIn" class="d-flex align-items-center gap-2">
@@ -288,44 +314,48 @@ const { isDark, toggleTheme } = useTheme()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 2rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .app-header__nav {
-  flex: 1; 
+  flex: 1;
 }
 
 .app-header__links {
   display: flex;
-  justify-content: space-evenly; 
-  gap: 1rem;
+  justify-content: center;
+  gap: clamp(1rem, 4vw, 2.5rem);
   width: 100%;
 }
 
-
 .app-header__link {
-  flex: 1; 
+  flex: 1;
   text-align: center;
-  font-weight: 500;
-  padding: 0.5rem 0;
-  transition: color 0.3s, border-color 0.3s;
-  border-bottom: 2px solid transparent;
-}
-
-.app-header__link:hover {
-  color: #4f46e5; 
-}
-
-.app-header__link.is-active {
-  border-color: #6366f1; 
-  color: #4338ca;
 }
 
 .app-header__cta-group {
   display: flex;
-  gap: 0.75rem;
-  margin-left: 2rem;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  margin-left: clamp(1rem, 2vw, 2rem);
+}
+
+.app-header__theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.app-header__theme-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-header__theme-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* Hide desktop-only elements on small screens */
@@ -336,15 +366,12 @@ const { isDark, toggleTheme } = useTheme()
 }
 
 .signout-button {
-  background-color: #ef4444 !important; /* Red */
+  background: linear-gradient(135deg, #8c1a1f 0%, #b5333e 100%) !important;
   color: #fff !important;
-  transition: background-color 0.2s;
+  box-shadow: 0 12px 22px rgba(140, 26, 31, 0.35) !important;
 }
 
 .signout-button:hover {
-  background-color: #dc2626 !important; /* Darker red */
+  background: linear-gradient(135deg, #a3262c 0%, #cf404a 100%) !important;
 }
-
-
-
 </style>

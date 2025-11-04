@@ -117,60 +117,36 @@ const quickLinks = [
 
     <div class="row g-3">
       <!-- Lost reports billboard -->
-  <div class="col-12 col-lg-6">
-    <div
-      class="card border-0 shadow-sm overflow-hidden text-white h-100"
-      style="border-radius: 1rem; background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);"
-    >
-      <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
-        <div>
-          <div class="text-white-50 text-uppercase small fw-semibold mb-1">Lost reports</div>
-          <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : lostCount }}</div>
-          <div class="small text-white-75">Filed by students and staff.</div>
+      <div class="col-12 col-lg-6">
+        <div class="card dashboard-hero dashboard-hero--lost overflow-hidden h-100">
+          <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
+            <div>
+              <div class="dashboard-hero__eyebrow">Lost reports</div>
+              <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : lostCount }}</div>
+              <div class="dashboard-hero__meta">Filed by students and staff.</div>
+            </div>
+            <div class="dashboard-hero__icon dashboard-hero__icon--light" aria-hidden="true">
+              <img :src="lostIcon" alt="" />
+            </div>
+          </div>
         </div>
-        <div
-            class="d-none d-sm-flex align-items-center justify-content-center"
-            style="width:90px;height:90px;overflow:hidden;"
-            aria-hidden="true"
-        >
-          <img
-            :src="lostIcon"
-            alt="LostIcon"
-            style="width:70%;height:auto;object-fit:contain;filter:brightness(0) invert(1);"
-          />
-
-</div>
-
       </div>
-    </div>
-  </div>
 
       <!-- Found submissions billboard -->
-  <div class="col-12 col-lg-6">
-    <div
-      class="card border-0 shadow-sm overflow-hidden text-white h-100"
-      style="border-radius: 1rem; background: linear-gradient(135deg,#059669 0%, #10b981 50%, #22c55e 100%);"
-    >
-      <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
-        <div>
-          <div class="text-white-50 text-uppercase small fw-semibold mb-1">Found submissions</div>
-          <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : foundCount }}</div>
-          <div class="small text-white-75">Items waiting for a match.</div>
-        </div>
-        <div
-          class="d-none d-sm-flex align-items-center justify-content-center"
-          style="width:90px;height:90px;overflow:hidden;"
-          aria-hidden="true"
-        >
-          <img
-            :src="foundIcon"
-            alt="Found Icon"
-            style="width:70%;height:auto;object-fit:contain;filter:brightness(0) invert(1);"
-          />
+      <div class="col-12 col-lg-6">
+        <div class="card dashboard-hero dashboard-hero--found overflow-hidden h-100">
+          <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
+            <div>
+              <div class="dashboard-hero__eyebrow">Found submissions</div>
+              <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : foundCount }}</div>
+              <div class="dashboard-hero__meta">Items waiting for a match.</div>
+            </div>
+            <div class="dashboard-hero__icon dashboard-hero__icon--dark" aria-hidden="true">
+              <img :src="foundIcon" alt="" />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
       <div class="col-lg-12">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body">
@@ -278,10 +254,96 @@ const quickLinks = [
 </template>
 
 <style>
+.dashboard-hero {
+  position: relative;
+  border: none;
+  border-radius: 1.1rem;
+  background: linear-gradient(135deg, #00205b 0%, #173f8f 55%, #2f66c1 100%);
+  color: #f9fbff;
+  box-shadow: 0 20px 40px rgba(0, 32, 91, 0.28);
+  overflow: hidden;
+}
+
+.dashboard-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 85% 15%, rgba(244, 209, 132, 0.38), transparent 60%);
+  pointer-events: none;
+}
+
+.dashboard-hero--found {
+  background: linear-gradient(135deg, #f4d184 0%, #c6952d 55%, #8c6d2f 100%);
+  color: #1f1a12;
+  box-shadow: 0 20px 42px rgba(140, 109, 47, 0.32);
+}
+
+.dashboard-hero--found::after {
+  background: radial-gradient(circle at 20% 25%, rgba(0, 32, 91, 0.22), transparent 65%);
+}
+
+.dashboard-hero__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-hero__meta {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.dashboard-hero--found .dashboard-hero__eyebrow {
+  color: rgba(0, 32, 91, 0.7);
+  opacity: 1;
+}
+
+.dashboard-hero--found .dashboard-hero__meta {
+  color: rgba(17, 26, 50, 0.8);
+}
+
+.dashboard-hero__icon {
+  display: none;
+  width: 90px;
+  height: 90px;
+  border-radius: 18px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.dashboard-hero__icon img {
+  width: 68%;
+  height: auto;
+}
+
+.dashboard-hero__icon--light img {
+  filter: brightness(0) invert(1);
+}
+
+.dashboard-hero__icon--dark {
+  background: rgba(0, 32, 91, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(0, 32, 91, 0.18);
+}
+
+.dashboard-hero__icon--dark img {
+  filter: saturate(1.1) hue-rotate(-12deg);
+}
+
+@media (min-width: 576px) {
+  .dashboard-hero__icon {
+    display: inline-flex;
+  }
+}
+
 .quick-links {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .quick-link {
@@ -289,88 +351,146 @@ const quickLinks = [
   grid-template-columns: auto 1fr;
   gap: 1rem;
   align-items: center;
-  padding: 14px 18px;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--surface-base);
+  padding: 16px 20px;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 32, 91, 0.14);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--text-body);
-  box-shadow: var(--shadow-xs);
-  transition: background var(--transition-medium) var(--transition-timing),
+  box-shadow: 0 16px 30px rgba(0, 32, 91, 0.12);
+  transition: transform var(--transition-medium) var(--transition-timing),
     box-shadow var(--transition-medium) var(--transition-timing),
-    transform var(--transition-medium) var(--transition-timing);
+    border-color var(--transition-medium) var(--transition-timing),
+    background var(--transition-medium) var(--transition-timing);
 }
 
 .quick-link:hover,
 .quick-link:focus-visible {
-  background: var(--surface-soft);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 22px 42px rgba(0, 32, 91, 0.18);
+  border-color: rgba(0, 32, 91, 0.28);
+  background: linear-gradient(135deg, rgba(244, 209, 132, 0.18), rgba(255, 255, 255, 0.95));
   text-decoration: none;
 }
 
 .quick-icon {
-  width: 60px;
-  height: 60px;
+  width: 62px;
+  height: 62px;
   font-size: 2rem;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
-  color: var(--color-primary-600);
+  background: rgba(0, 32, 91, 0.12);
+  color: #00205b;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background var(--transition-medium) var(--transition-timing),
-    color var(--transition-medium) var(--transition-timing);
+    color var(--transition-medium) var(--transition-timing),
+    transform var(--transition-medium) var(--transition-timing);
 }
 
 .quick-link:hover .quick-icon,
 .quick-link:focus-visible .quick-icon {
-  background: var(--color-primary-600);
-  color: var(--text-inverse);
+  background: linear-gradient(135deg, #00205b, #174a99);
+  color: #f9fbff;
+  transform: scale(1.05);
 }
 
 .link-label {
-  font-weight: 600;
-  color: var(--color-primary-600);
+  font-weight: 700;
+  color: #00205b;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   transition: color var(--transition-medium) var(--transition-timing);
 }
 
 .quick-link:hover .link-label,
 .quick-link:focus-visible .link-label {
-  color: var(--color-primary-500);
+  color: #174a99;
 }
 
 .quick-description {
-  color: var(--text-muted);
+  color: rgba(17, 38, 79, 0.72);
+}
+
+html.dark .dashboard-hero {
+  background: linear-gradient(135deg, rgba(0, 32, 91, 0.92) 0%, rgba(13, 49, 112, 0.92) 55%, rgba(32, 96, 182, 0.86) 100%);
+  color: #f2f6ff;
+  box-shadow: 0 20px 44px rgba(1, 12, 36, 0.65);
+}
+
+html.dark .dashboard-hero::after {
+  background: radial-gradient(circle at 85% 15%, rgba(244, 209, 132, 0.28), transparent 60%);
+}
+
+html.dark .dashboard-hero--found {
+  background: linear-gradient(135deg, rgba(198, 149, 45, 0.88) 0%, rgba(140, 109, 47, 0.92) 55%, rgba(84, 60, 22, 0.95) 100%);
+  color: #fff7df;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
+}
+
+html.dark .dashboard-hero--found .dashboard-hero__eyebrow {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html.dark .dashboard-hero--found .dashboard-hero__meta {
+  color: rgba(255, 252, 244, 0.76);
+}
+
+html.dark .dashboard-hero__icon {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+html.dark .dashboard-hero__icon--dark {
+  background: rgba(0, 32, 91, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(0, 32, 91, 0.4);
+}
+
+html.dark .dashboard-hero__icon--dark img {
+  filter: brightness(1.05) saturate(1.2);
 }
 
 html.dark .quick-link,
 .dark .quick-link {
-  background: rgba(15, 23, 42, 0.75);
-  box-shadow: var(--shadow-sm);
+  background: rgba(4, 15, 38, 0.85);
+  border-color: rgba(88, 119, 184, 0.32);
+  box-shadow: 0 18px 36px rgba(1, 12, 36, 0.55);
 }
 
 html.dark .quick-link:hover,
 .dark .quick-link:hover,
 html.dark .quick-link:focus-visible,
 .dark .quick-link:focus-visible {
-  background: rgba(79, 70, 229, 0.18);
+  background: linear-gradient(135deg, rgba(0, 32, 91, 0.58), rgba(4, 15, 38, 0.92));
+  border-color: rgba(140, 182, 255, 0.45);
+}
+
+html.dark .quick-icon,
+.dark .quick-icon {
+  background: rgba(140, 182, 255, 0.18);
+  color: #dce6ff;
+}
+
+html.dark .quick-link:hover .quick-icon,
+.dark .quick-link:hover .quick-icon,
+html.dark .quick-link:focus-visible .quick-icon,
+.dark .quick-link:focus-visible .quick-icon {
+  background: linear-gradient(135deg, rgba(140, 182, 255, 0.6), rgba(0, 32, 91, 0.8));
 }
 
 html.dark .link-label,
 .dark .link-label {
-  color: var(--color-primary-300);
+  color: #dce6ff;
 }
 
 html.dark .quick-link:hover .link-label,
 .dark .quick-link:hover .link-label,
 html.dark .quick-link:focus-visible .link-label,
 .dark .quick-link:focus-visible .link-label {
-  color: var(--color-primary-200);
+  color: #f4d184;
 }
 
 html.dark .quick-description,
 .dark .quick-description {
-  color: color-mix(in srgb, var(--text-muted) 82%, var(--text-body) 18%);
+  color: rgba(224, 233, 255, 0.78);
 }
-
 </style>
