@@ -75,6 +75,14 @@ export async function fetchLostItemById(id, { select = '*' } = {}) {
 function normalizeLostItemPayload(payload = {}) {
   const normalized = { ...payload }
 
+  if ('image_url' in normalized) {
+    delete normalized.image_url
+  }
+
+  if ('imageUrl' in normalized) {
+    delete normalized.imageUrl
+  }
+
   if (Array.isArray(payload.images)) {
     normalized.image_metadata = payload.images.map((image) => ({
       path: image.path,
@@ -84,6 +92,17 @@ function normalizeLostItemPayload(payload = {}) {
       size: image.size ?? null
     }))
     delete normalized.images
+  }
+
+  if (Array.isArray(payload.imageMetadata)) {
+    normalized.image_metadata = payload.imageMetadata.map((image) => ({
+      path: image.path,
+      original_filename: image.originalName || image.original_filename || null,
+      bucket_id: image.bucketId || image.bucket_id || DEFAULT_STORAGE_BUCKET,
+      mime_type: image.mimeType || image.mime_type || null,
+      size: image.size ?? null
+    }))
+    delete normalized.imageMetadata
   }
 
   if (Array.isArray(payload.image_metadata)) {
