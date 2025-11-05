@@ -42,6 +42,8 @@ interface LostItem {
   model?: string
   color?: string
   description: string
+  date_lost?: string
+  location_lost?: string
   image_metadata: ImageMetadata[]
   matching_status?: string
 }
@@ -53,6 +55,8 @@ interface FoundItem {
   model?: string
   color?: string
   description: string
+  date_found?: string
+  location_found?: string
   image_metadata: ImageMetadata[]
 }
 
@@ -162,57 +166,150 @@ function calculateImageSimilarity(
   return weights > 0 ? totalScore / weights : 0
 }
 
+// Calculate days between two dates
+function daysBetween(date1: Date, date2: Date): number {
+  const msPerDay = 1000 * 60 * 60 * 24
+  const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate())
+  const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate())
+  return Math.abs(Math.floor((utc2 - utc1) / msPerDay))
+}
+
+// Calculate location similarity (simple string matching)
+function calculateLocationSimilarity(location1: string, location2: string): number {
+  if (!location1 || !location2) return 0
+
+  const loc1 = location1.toLowerCase().trim()
+  const loc2 = location2.toLowerCase().trim()
+
+  // Exact match
+  if (loc1 === loc2) return 1.0
+
+  // One contains the other
+  if (loc1.includes(loc2) || loc2.includes(loc1)) return 0.7
+
+  // Check for common words (building names, floor numbers, etc.)
+  const words1 = loc1.split(/\s+/)
+  const words2 = loc2.split(/\s+/)
+  const commonWords = words1.filter(w => w.length > 2 && words2.includes(w))
+
+  if (commonWords.length > 0) {
+    return Math.min(0.5, commonWords.length * 0.2)
+  }
+
+  return 0
+}
+
 // Calculate text-based similarity between metadata
 function calculateMetadataSimilarity(lostItem: LostItem, foundItem: FoundItem): number {
-  let score = 0
-  let factors = 0
-
-  // Category match (strong signal)
-  if (lostItem.category?.toLowerCase() === foundItem.category?.toLowerCase()) {
-    score += 1.0
-    factors += 1
+  // Use weighted scoring with emphasis on time, location, and unique identifiers
+  let totalScore = 0
+  const weights = {
+    dateProximity: 4.0,   // MOST IMPORTANT - items lost and found around same time
+    location: 3.5,        // VERY IMPORTANT - items lost and found in same area
+    model: 2.5,          // Important - identifies the specific item type
+    category: 2.0,       // Important - but many items share categories
+    color: 1.0,          // Supporting evidence
+    brand: 0.3,          // MINIMAL - many items share brands (Apple, Samsung, etc.)
   }
+  let totalWeight = 0
 
-  // Brand match
-  if (lostItem.brand && foundItem.brand) {
-    if (lostItem.brand.toLowerCase() === foundItem.brand.toLowerCase()) {
-      score += 1.0
-    } else if (
-      lostItem.brand.toLowerCase().includes(foundItem.brand.toLowerCase()) ||
-      foundItem.brand.toLowerCase().includes(lostItem.brand.toLowerCase())
-    ) {
-      score += 0.5
+  // Date proximity (CRITICAL - if dates are far apart, unlikely to be same item)
+  if (lostItem.date_lost && foundItem.date_found) {
+    try {
+      const lostDate = new Date(lostItem.date_lost)
+      const foundDate = new Date(foundItem.date_found)
+      const daysDiff = daysBetween(lostDate, foundDate)
+
+      let dateScore = 0
+      if (daysDiff === 0) {
+        dateScore = 1.0  // Same day - very likely
+      } else if (daysDiff === 1) {
+        dateScore = 0.9  // Next day - still very likely
+      } else if (daysDiff <= 3) {
+        dateScore = 0.7  // Within 3 days - possible
+      } else if (daysDiff <= 7) {
+        dateScore = 0.4  // Within a week - less likely
+      } else if (daysDiff <= 14) {
+        dateScore = 0.2  // Within 2 weeks - unlikely
+      } else {
+        dateScore = 0.05 // More than 2 weeks - very unlikely
+      }
+
+      totalScore += weights.dateProximity * dateScore
+      totalWeight += weights.dateProximity
+    } catch (e) {
+      console.error('Error parsing dates:', e)
     }
-    factors += 1
   }
 
-  // Model match
+  // Location proximity (VERY IMPORTANT)
+  if (lostItem.location_lost && foundItem.location_found) {
+    const locationScore = calculateLocationSimilarity(
+      lostItem.location_lost,
+      foundItem.location_found
+    )
+    totalScore += weights.location * locationScore
+    totalWeight += weights.location
+  }
+
+  // Model match (identifies the specific item type)
   if (lostItem.model && foundItem.model) {
-    if (lostItem.model.toLowerCase() === foundItem.model.toLowerCase()) {
-      score += 1.0
+    const lostModelLower = lostItem.model.toLowerCase()
+    const foundModelLower = foundItem.model.toLowerCase()
+
+    if (lostModelLower === foundModelLower) {
+      totalScore += weights.model * 1.0
     } else if (
-      lostItem.model.toLowerCase().includes(foundItem.model.toLowerCase()) ||
-      foundItem.model.toLowerCase().includes(lostItem.model.toLowerCase())
+      lostModelLower.includes(foundModelLower) ||
+      foundModelLower.includes(lostModelLower)
     ) {
-      score += 0.5
+      totalScore += weights.model * 0.6
     }
-    factors += 1
+    totalWeight += weights.model
   }
 
-  // Color match
+  // Category match
+  if (lostItem.category && foundItem.category) {
+    if (lostItem.category.toLowerCase() === foundItem.category.toLowerCase()) {
+      totalScore += weights.category * 1.0
+    }
+    totalWeight += weights.category
+  }
+
+  // Color match (supporting evidence)
   if (lostItem.color && foundItem.color) {
-    if (lostItem.color.toLowerCase() === foundItem.color.toLowerCase()) {
-      score += 1.0
+    const lostColorLower = lostItem.color.toLowerCase()
+    const foundColorLower = foundItem.color.toLowerCase()
+
+    if (lostColorLower === foundColorLower) {
+      totalScore += weights.color * 1.0
     } else if (
-      lostItem.color.toLowerCase().includes(foundItem.color.toLowerCase()) ||
-      foundItem.color.toLowerCase().includes(lostItem.color.toLowerCase())
+      lostColorLower.includes(foundColorLower) ||
+      foundColorLower.includes(lostColorLower)
     ) {
-      score += 0.5
+      totalScore += weights.color * 0.5
     }
-    factors += 1
+    totalWeight += weights.color
   }
 
-  return factors > 0 ? score / factors : 0
+  // Brand match (MINIMAL weight - many items share brands)
+  if (lostItem.brand && foundItem.brand) {
+    const lostBrandLower = lostItem.brand.toLowerCase()
+    const foundBrandLower = foundItem.brand.toLowerCase()
+
+    if (lostBrandLower === foundBrandLower) {
+      totalScore += weights.brand * 1.0
+    } else if (
+      lostBrandLower.includes(foundBrandLower) ||
+      foundBrandLower.includes(lostBrandLower)
+    ) {
+      totalScore += weights.brand * 0.5
+    }
+    totalWeight += weights.brand
+  }
+
+  // Return normalized score (0-1 range)
+  return totalWeight > 0 ? totalScore / totalWeight : 0
 }
 
 serve(async (req) => {
@@ -266,10 +363,10 @@ serve(async (req) => {
       .update({ matching_status: 'processing' })
       .eq('id', lostItemId)
 
-    // Fetch the lost item
+    // Fetch the lost item with date and location
     const { data: lostItem, error: lostError } = await supabase
       .from('lost_items')
-      .select('*')
+      .select('id,user_id,category,brand,model,color,description,date_lost,location_lost,image_metadata,matching_status')
       .eq('id', lostItemId)
       .single()
 
@@ -293,10 +390,10 @@ serve(async (req) => {
       )
     }
 
-    // Fetch all found items with images (any status except 'claimed')
+    // Fetch all found items with images and location/date (any status except 'claimed')
     const { data: foundItems, error: foundError } = await supabase
       .from('found_items')
-      .select('*')
+      .select('id,category,brand,model,color,description,date_found,location_found,image_metadata,status')
       .neq('status', 'claimed')
       .not('image_metadata', 'eq', '[]')
 
@@ -366,8 +463,18 @@ serve(async (req) => {
         ? imageScore * 0.6 + metadataScore * 0.4
         : metadataScore
 
-      if (finalScore > 0.3) {
-        // Only include matches with score > 30%
+      // IMPORTANT: If models are provided and completely different, this is likely not a match
+      // Require at least 40% similarity for matches to be considered
+      const hasModelMismatch = lostItemTyped.model && foundItem.model &&
+        !lostItemTyped.model.toLowerCase().includes(foundItem.model.toLowerCase()) &&
+        !foundItem.model.toLowerCase().includes(lostItemTyped.model.toLowerCase())
+
+      // Increase threshold to 40% and reject if models completely mismatch
+      if (finalScore > 0.4 && !hasModelMismatch) {
+        matches.push({ foundItem, score: finalScore })
+      } else if (finalScore > 0.6 && hasModelMismatch) {
+        // Only include model mismatches if they have VERY high confidence (60%+)
+        // This handles cases where model names might be entered differently
         matches.push({ foundItem, score: finalScore })
       }
     }

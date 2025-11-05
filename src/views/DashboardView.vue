@@ -69,6 +69,11 @@ const closeMatchesModal = () => {
   selectedLostItem.value = null
 }
 
+const handleMatchClaimed = async () => {
+  // Refresh the lost items list to show updated status
+  await loadMyLostItems()
+}
+
 // Load user's own lost items with matching status
 const loadMyLostItems = async () => {
   if (!user.value?.id) return
@@ -77,8 +82,10 @@ const loadMyLostItems = async () => {
 
   try {
     const response = await fetchLostItems({
-      select: 'id,category,brand,model,description,location_lost,date_lost,matching_status,image_metadata',
-      filters: { user_id: `eq.${user.value.id}` },
+      select: 'id,category,brand,model,description,location_lost,date_lost,matching_status,status,image_metadata',
+      filters: {
+        user_id: `eq.${user.value.id}`
+      },
       order: 'created_at.desc',
       limit: 5
     })
@@ -221,7 +228,16 @@ const quickLinks = [
                       {{ item.category || 'Item' }}
                     </span>
                     <span
-                      v-if="item.matching_status"
+                      v-if="item.status === 'claimed'"
+                      class="badge bg-success text-white"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-check-circle-fill me-1" viewBox="0 0 16 16" style="margin-bottom: 2px;">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                      </svg>
+                      Claimed
+                    </span>
+                    <span
+                      v-else-if="item.matching_status"
                       :class="`badge ${getMatchingStatusBadge(item.matching_status).class} text-white`"
                     >
                       {{ getMatchingStatusBadge(item.matching_status).icon }}
@@ -230,9 +246,11 @@ const quickLinks = [
                   </div>
 
                   <h3 class="h6 fw-semibold mb-1 text-dark">
-                    {{ item.brand || item.model || 'Lost item' }}
+                    {{ item.model || item.brand || 'Lost item' }}
                   </h3>
                   <p class="text-muted small mb-2">
+                    <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }}</span>
+                    <span v-if="item.brand && item.model"> • </span>
                     {{ item.description || 'No description provided.' }}
                   </p>
 
@@ -260,14 +278,14 @@ const quickLinks = [
                   </div>
                 </div>
 
-                <!-- View Matches Button -->
-                <div v-if="item.matching_status === 'completed' && matchCounts[item.id] > 0">
+                <!-- View Matches/Details Button -->
+                <div v-if="item.matching_status === 'completed' && (matchCounts[item.id] > 0 || item.status === 'claimed')">
                   <button
                     type="button"
-                    class="btn btn-primary btn-sm"
+                    :class="`btn btn-sm ${item.status === 'claimed' ? 'btn-success' : 'btn-primary'}`"
                     @click="openMatchesModal(item)"
                   >
-                    View {{ matchCounts[item.id] === 1 ? 'Match' : 'Matches' }}
+                    {{ item.status === 'claimed' ? 'View Details' : `View ${matchCounts[item.id] === 1 ? 'Match' : 'Matches'}` }}
                   </button>
                 </div>
               </div>
@@ -447,6 +465,7 @@ const quickLinks = [
       <MatchesDisplay
         v-if="selectedLostItem"
         :lost-item-id="selectedLostItem.id"
+        @match-claimed="handleMatchClaimed"
       />
     </Modal>
   </section>

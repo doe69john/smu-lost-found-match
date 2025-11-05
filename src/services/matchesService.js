@@ -11,32 +11,51 @@ export async function fetchMatchesForLostItem(lostItemId) {
   }
 
   try {
-    const response = await httpClient.get('/rest/v1/matches', {
+    // First, fetch the matches
+    const matchesResponse = await httpClient.get('/rest/v1/matches', {
       params: {
         lost_item_id: `eq.${lostItemId}`,
-        select: `
-          id,
-          confidence_score,
-          status,
-          created_at,
-          found_items (
-            id,
-            description,
-            category,
-            brand,
-            model,
-            color,
-            location_found,
-            status,
-            image_metadata,
-            date_found
-          )
-        `,
+        select: 'id,confidence_score,status,created_at,found_item_id',
         order: 'confidence_score.desc'
       }
     })
 
-    return response.data || []
+    const matches = matchesResponse.data || []
+
+    if (matches.length === 0) {
+      return []
+    }
+
+    // Extract found_item_ids
+    const foundItemIds = matches.map(m => m.found_item_id).filter(Boolean)
+
+    if (foundItemIds.length === 0) {
+      return matches
+    }
+
+    // Fetch the found items in one query with security office details
+    const foundItemsResponse = await httpClient.get('/rest/v1/found_items', {
+      params: {
+        id: `in.(${foundItemIds.join(',')})`,
+        select: 'id,description,category,brand,model,color,location_found,status,image_metadata,date_found,drop_off_office_id,security_offices:drop_off_office_id(id,name,location)'
+      }
+    })
+
+    const foundItemsMap = {}
+    foundItemsResponse.data.forEach(item => {
+      foundItemsMap[item.id] = item
+    })
+
+    // Merge found items data into matches
+    const enrichedMatches = matches.map(match => ({
+      ...match,
+      found_items: foundItemsMap[match.found_item_id] || null
+    }))
+
+    console.log('Enriched matches:', enrichedMatches)
+    console.log('First enriched match:', enrichedMatches[0])
+
+    return enrichedMatches
   } catch (error) {
     console.error('Error fetching matches:', error)
     throw new Error(error.response?.data?.message || 'Failed to fetch matches')
@@ -110,7 +129,8 @@ export async function updateMatchStatus(matchId, status) {
   }
 
   try {
-    const response = await httpClient.patch(
+    // First, update the match status
+    const matchResponse = await httpClient.patch(
       `/rest/v1/matches?id=eq.${matchId}`,
       { status },
       {
@@ -120,7 +140,24 @@ export async function updateMatchStatus(matchId, status) {
       }
     )
 
-    return response.data?.[0] || {}
+    const match = matchResponse.data?.[0] || {}
+
+    // If confirming the match, also update the lost and found items to 'claimed'
+    if (status === 'confirmed' && match.lost_item_id && match.found_item_id) {
+      // Update lost item status to 'claimed'
+      await httpClient.patch(
+        `/rest/v1/lost_items?id=eq.${match.lost_item_id}`,
+        { status: 'claimed' }
+      )
+
+      // Update found item status to 'claimed'
+      await httpClient.patch(
+        `/rest/v1/found_items?id=eq.${match.found_item_id}`,
+        { status: 'claimed' }
+      )
+    }
+
+    return match
   } catch (error) {
     console.error('Error updating match status:', error)
     throw new Error(error.response?.data?.message || 'Failed to update match status')
