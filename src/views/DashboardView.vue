@@ -45,17 +45,22 @@ const formatDate = (value) => {
   return new Intl.DateTimeFormat('en-SG', { dateStyle: 'medium' }).format(date)
 }
 
-const getMatchingStatusBadge = (status) => {
+const getMatchingStatusBadge = (status, matchCount = 0) => {
   switch (status) {
     case 'completed':
-      return { class: 'bg-success', text: 'Matched', icon: '✓' }
+      // Only show "Matches Found" if there are actual matches
+      if (matchCount > 0) {
+        return { class: 'bg-success', text: `${matchCount} ${matchCount === 1 ? 'Match' : 'Matches'} Found`, icon: '✓' }
+      }
+      // Otherwise show "No matches found" to indicate AI finished but found nothing
+      return { class: 'bg-danger', text: 'No matches found', icon: '✗' }
     case 'processing':
-      return { class: 'bg-info', text: 'Processing', icon: '⏳' }
+      return { class: 'bg-info', text: 'Searching...', icon: '⏳' }
     case 'failed':
-      return { class: 'bg-danger', text: 'Failed', icon: '✗' }
+      return { class: 'bg-danger', text: 'Search Failed', icon: '✗' }
     case 'pending':
     default:
-      return { class: 'bg-secondary', text: 'Pending', icon: '⏱' }
+      return { class: 'bg-secondary', text: 'Search Pending', icon: '⏱' }
   }
 }
 
@@ -92,9 +97,8 @@ const loadMyLostItems = async () => {
 
     myLostItems.value = Array.isArray(response.data) ? response.data : []
 
-    // Fetch match counts for completed items
-    const completedItems = myLostItems.value.filter(item => item.matching_status === 'completed')
-    for (const item of completedItems) {
+    // Fetch match counts for all items to determine correct badge display
+    for (const item of myLostItems.value) {
       try {
         const matches = await fetchMatchesForLostItem(item.id)
         matchCounts.value[item.id] = matches.length
@@ -238,10 +242,10 @@ const quickLinks = [
                     </span>
                     <span
                       v-else-if="item.matching_status"
-                      :class="`badge ${getMatchingStatusBadge(item.matching_status).class} text-white`"
+                      :class="`badge ${getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).class} text-white`"
                     >
-                      {{ getMatchingStatusBadge(item.matching_status).icon }}
-                      {{ getMatchingStatusBadge(item.matching_status).text }}
+                      {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).icon }}
+                      {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).text }}
                     </span>
                   </div>
 
@@ -263,18 +267,6 @@ const quickLinks = [
                       <span class="me-1">🗓</span>
                       {{ formatDate(item.date_lost) }}
                     </span>
-                  </div>
-
-                  <!-- Match notification -->
-                  <div
-                    v-if="item.matching_status === 'completed' && matchCounts[item.id] > 0"
-                    class="alert alert-success d-inline-flex align-items-center gap-2 mt-2 mb-0 py-2 px-3"
-                    role="alert"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
-                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-                    </svg>
-                    <strong>{{ matchCounts[item.id] }} potential {{ matchCounts[item.id] === 1 ? 'match' : 'matches' }} found!</strong>
                   </div>
                 </div>
 
@@ -395,10 +387,10 @@ const quickLinks = [
             <ul v-else class="list-group list-group-flush">
               <li v-for="item in recentLost" :key="item.id" class="list-group-item">
                 <div class="fw-semibold">
-                  {{ item.brand || item.model || item.category || 'Item' }}
+                  {{ item.model || item.brand || 'Lost item' }}
                 </div>
                 <div class="text-muted small">
-                  {{ item.description || 'No description provided.' }}
+                  <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
                 </div>
                 <div class="d-flex flex-wrap gap-3 small text-muted mt-2">
                   <span>
@@ -433,10 +425,10 @@ const quickLinks = [
             <ul v-else class="list-group list-group-flush">
               <li v-for="item in recentFound" :key="item.id" class="list-group-item">
                 <div class="fw-semibold">
-                  {{ item.brand || item.model || item.category || 'Item' }}
+                  {{ item.model || item.brand || 'Found item' }}
                 </div>
                 <div class="text-muted small">
-                  {{ item.description || 'No description provided.' }}
+                  <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
                 </div>
                 <div class="d-flex flex-wrap gap-3 small text-muted mt-2">
                   <span>

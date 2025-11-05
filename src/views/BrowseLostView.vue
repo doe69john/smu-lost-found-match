@@ -5,6 +5,7 @@ import Modal from '@/components/ui/Modal.vue'
 import MatchesDisplay from '@/components/common/MatchesDisplay.vue'
 import { useLoadingDelay } from '@/composables/useLoadingDelay'
 import { fetchLostItems } from '../services/lostItemsService'
+import { fetchMatchesForLostItem } from '../services/matchesService'
 import { pushToast } from '../composables/useToast'
 
 const categories = [
@@ -31,6 +32,7 @@ const isLoading = ref(false)
 const { isVisible: showLoadMoreLoader } = useLoadingDelay(isLoading)
 const errorMessage = ref('')
 const isInitialLoad = ref(true)
+const matchCounts = ref({})
 
 const PAGE_SIZE = 9
 let searchDebounceId = null
@@ -87,6 +89,21 @@ const loadItems = async (reset = false) => {
     const results = Array.isArray(data) ? data : []
     items.value = reset ? results : [...items.value, ...results]
 
+    // Fetch match counts for the new items
+    for (const item of results) {
+      if (item.matching_status === 'completed') {
+        try {
+          const matches = await fetchMatchesForLostItem(item.id)
+          matchCounts.value[item.id] = matches.length
+        } catch (error) {
+          console.error(`Failed to fetch matches for item ${item.id}:`, error)
+          matchCounts.value[item.id] = 0
+        }
+      } else {
+        matchCounts.value[item.id] = 0
+      }
+    }
+
     page.value += 1
   } catch (error) {
     errorMessage.value = error?.message || 'Unable to load lost item reports.'
@@ -117,17 +134,22 @@ const closeMatchesModal = () => {
   selectedLostItem.value = null
 }
 
-const getMatchingStatusBadge = (status) => {
+const getMatchingStatusBadge = (status, matchCount = 0) => {
   switch (status) {
     case 'completed':
-      return { class: 'bg-success', text: 'Matches found' }
+      // Only show "Matches Found" if there are actual matches
+      if (matchCount > 0) {
+        return { class: 'bg-success', text: `${matchCount} ${matchCount === 1 ? 'Match' : 'Matches'}` }
+      }
+      // Otherwise show "No matches found" to indicate AI finished but found nothing
+      return { class: 'bg-danger', text: 'No matches found' }
     case 'processing':
-      return { class: 'bg-info', text: 'Processing...' }
+      return { class: 'bg-info', text: 'Searching...' }
     case 'failed':
-      return { class: 'bg-danger', text: 'Failed' }
+      return { class: 'bg-danger', text: 'Search Failed' }
     case 'pending':
     default:
-      return { class: 'bg-secondary', text: 'Pending' }
+      return { class: 'bg-secondary', text: 'Search Pending' }
   }
 }
 
@@ -219,21 +241,23 @@ watch(
                 </span>
                 <span
                   v-if="item.matching_status"
-                  :class="`badge ${getMatchingStatusBadge(item.matching_status).class} text-white`"
+                  :class="`badge ${getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).class} text-white`"
                 >
-                  {{ getMatchingStatusBadge(item.matching_status).text }}
+                  {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).text }}
                 </span>
               </div>
-              <h2 class="h5 mb-0">{{ item.brand || item.model || 'Lost item' }}</h2>
-              <p class="text-muted mb-0 flex-grow-1">{{ item.description || 'No description provided.' }}</p>
+              <h2 class="h5 mb-0">{{ item.model || item.brand || 'Lost item' }}</h2>
+              <p class="text-muted mb-0 flex-grow-1">
+                <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
+              </p>
 
               <button
-                v-if="item.matching_status === 'completed'"
+                v-if="item.matching_status === 'completed' && matchCounts[item.id] > 0"
                 type="button"
                 class="btn btn-sm btn-outline-primary mt-2"
                 @click="openMatchesModal(item)"
               >
-                View Matches
+                View {{ matchCounts[item.id] === 1 ? 'Match' : 'Matches' }}
               </button>
             </div>
             <div class="card-footer bg-white border-0">

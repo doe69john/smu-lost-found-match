@@ -186,8 +186,10 @@ watch(
               <span class="badge text-bg-success-subtle text-success-emphasis d-inline-flex px-3 py-2">
                 {{ item.category || 'Item' }}
               </span>
-              <h2 class="h5 mb-0">{{ item.brand || item.model || 'Found item' }}</h2>
-              <p class="text-muted mb-0">{{ item.description || 'No description provided.' }}</p>
+              <h2 class="h5 mb-0">{{ item.model || item.brand || 'Found item' }}</h2>
+              <p class="text-muted mb-0">
+                <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
+              </p>
             </div>
             <div class="card-footer bg-white border-0">
               <div class="small text-muted">
