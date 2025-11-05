@@ -4,6 +4,9 @@ import { RouterLink } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { fetchLostItems } from '../services/lostItemsService'
 import { fetchFoundItems } from '../services/foundItemsService'
+import { fetchMatchesForLostItem } from '../services/matchesService'
+import Modal from '@/components/ui/Modal.vue'
+import MatchesDisplay from '@/components/common/MatchesDisplay.vue'
 import { pushToast } from '../composables/useToast'
 import lostIcon from '../assets/lost.png'
 import foundIcon from '../assets/found.png'
@@ -15,8 +18,15 @@ const lostCount = ref(0)
 const foundCount = ref(0)
 const recentLost = ref([])
 const recentFound = ref([])
+const myLostItems = ref([])
+const matchCounts = ref({})
 const isLoading = ref(false)
+const isLoadingMyItems = ref(false)
 const errorMessage = ref('')
+
+// Modal state
+const showMatchesModal = ref(false)
+const selectedLostItem = ref(null)
 
 const displayName = computed(() => {
   if (!user.value) return 'there'
@@ -33,6 +43,64 @@ const formatDate = (value) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return 'Date unknown'
   return new Intl.DateTimeFormat('en-SG', { dateStyle: 'medium' }).format(date)
+}
+
+const getMatchingStatusBadge = (status) => {
+  switch (status) {
+    case 'completed':
+      return { class: 'bg-success', text: 'Matched', icon: '✓' }
+    case 'processing':
+      return { class: 'bg-info', text: 'Processing', icon: '⏳' }
+    case 'failed':
+      return { class: 'bg-danger', text: 'Failed', icon: '✗' }
+    case 'pending':
+    default:
+      return { class: 'bg-secondary', text: 'Pending', icon: '⏱' }
+  }
+}
+
+const openMatchesModal = (item) => {
+  selectedLostItem.value = item
+  showMatchesModal.value = true
+}
+
+const closeMatchesModal = () => {
+  showMatchesModal.value = false
+  selectedLostItem.value = null
+}
+
+// Load user's own lost items with matching status
+const loadMyLostItems = async () => {
+  if (!user.value?.id) return
+
+  isLoadingMyItems.value = true
+
+  try {
+    const response = await fetchLostItems({
+      select: 'id,category,brand,model,description,location_lost,date_lost,matching_status,image_metadata',
+      filters: { user_id: `eq.${user.value.id}` },
+      order: 'created_at.desc',
+      limit: 5
+    })
+
+    myLostItems.value = Array.isArray(response.data) ? response.data : []
+
+    // Fetch match counts for completed items
+    const completedItems = myLostItems.value.filter(item => item.matching_status === 'completed')
+    for (const item of completedItems) {
+      try {
+        const matches = await fetchMatchesForLostItem(item.id)
+        matchCounts.value[item.id] = matches.length
+      } catch (error) {
+        console.error(`Failed to fetch matches for item ${item.id}:`, error)
+        matchCounts.value[item.id] = 0
+      }
+    }
+  } catch (error) {
+    console.error('Error loading my lost items:', error)
+  } finally {
+    isLoadingMyItems.value = false
+  }
 }
 
 const loadDashboard = async () => {
@@ -76,6 +144,7 @@ const loadDashboard = async () => {
 
 onMounted(() => {
   loadDashboard()
+  loadMyLostItems()
 })
 
 const quickLinks = [
@@ -114,6 +183,99 @@ const quickLinks = [
         Track reports, review matches and keep the Lost &amp; Found ecosystem moving.
       </p>
     </header>
+
+    <!-- My Lost Items Section -->
+    <div v-if="myLostItems.length > 0" class="card border-0 shadow-sm" style="border-radius: 1rem; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
+      <div class="card-body text-white p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 mb-0 fw-semibold">
+            <span class="me-2">🔍</span>
+            My Lost Items
+          </h2>
+          <RouterLink
+            class="btn btn-sm btn-light"
+            :to="{ name: 'browse-lost' }"
+          >
+            View All
+          </RouterLink>
+        </div>
+
+        <div v-if="isLoadingMyItems" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-white" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+
+        <div v-else class="d-grid gap-2">
+          <div
+            v-for="item in myLostItems"
+            :key="item.id"
+            class="card"
+            style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);"
+          >
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <div class="flex-grow-1">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary-subtle text-primary">
+                      {{ item.category || 'Item' }}
+                    </span>
+                    <span
+                      v-if="item.matching_status"
+                      :class="`badge ${getMatchingStatusBadge(item.matching_status).class} text-white`"
+                    >
+                      {{ getMatchingStatusBadge(item.matching_status).icon }}
+                      {{ getMatchingStatusBadge(item.matching_status).text }}
+                    </span>
+                  </div>
+
+                  <h3 class="h6 fw-semibold mb-1 text-dark">
+                    {{ item.brand || item.model || 'Lost item' }}
+                  </h3>
+                  <p class="text-muted small mb-2">
+                    {{ item.description || 'No description provided.' }}
+                  </p>
+
+                  <div class="d-flex flex-wrap gap-3 small text-muted">
+                    <span>
+                      <span class="me-1">📍</span>
+                      {{ item.location_lost || 'Unknown location' }}
+                    </span>
+                    <span>
+                      <span class="me-1">🗓</span>
+                      {{ formatDate(item.date_lost) }}
+                    </span>
+                  </div>
+
+                  <!-- Match notification -->
+                  <div
+                    v-if="item.matching_status === 'completed' && matchCounts[item.id] > 0"
+                    class="alert alert-success d-inline-flex align-items-center gap-2 mt-2 mb-0 py-2 px-3"
+                    role="alert"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>
+                    <strong>{{ matchCounts[item.id] }} potential {{ matchCounts[item.id] === 1 ? 'match' : 'matches' }} found!</strong>
+                  </div>
+                </div>
+
+                <!-- View Matches Button -->
+                <div v-if="item.matching_status === 'completed' && matchCounts[item.id] > 0">
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    @click="openMatchesModal(item)"
+                  >
+                    View {{ matchCounts[item.id] === 1 ? 'Match' : 'Matches' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="row g-3">
       <!-- Lost reports billboard -->
@@ -274,6 +436,19 @@ const quickLinks = [
         </div>
       </div>
     </div>
+
+    <!-- Matches Modal -->
+    <Modal
+      v-model="showMatchesModal"
+      :title="`Potential Matches for ${selectedLostItem?.brand || selectedLostItem?.model || 'Lost Item'}`"
+      size="lg"
+      @cancel="closeMatchesModal"
+    >
+      <MatchesDisplay
+        v-if="selectedLostItem"
+        :lost-item-id="selectedLostItem.id"
+      />
+    </Modal>
   </section>
 </template>
 

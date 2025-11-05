@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import PulseLoader from '@/components/common/PulseLoader.vue'
+import Modal from '@/components/ui/Modal.vue'
+import MatchesDisplay from '@/components/common/MatchesDisplay.vue'
 import { useLoadingDelay } from '@/composables/useLoadingDelay'
 import { fetchLostItems } from '../services/lostItemsService'
 import { pushToast } from '../composables/useToast'
@@ -101,6 +103,34 @@ const loadItems = async (reset = false) => {
 
 const refreshItems = () => loadItems(true)
 
+// Modal state for viewing matches
+const showMatchesModal = ref(false)
+const selectedLostItem = ref(null)
+
+const openMatchesModal = (item) => {
+  selectedLostItem.value = item
+  showMatchesModal.value = true
+}
+
+const closeMatchesModal = () => {
+  showMatchesModal.value = false
+  selectedLostItem.value = null
+}
+
+const getMatchingStatusBadge = (status) => {
+  switch (status) {
+    case 'completed':
+      return { class: 'bg-success', text: 'Matches found' }
+    case 'processing':
+      return { class: 'bg-info', text: 'Processing...' }
+    case 'failed':
+      return { class: 'bg-danger', text: 'Failed' }
+    case 'pending':
+    default:
+      return { class: 'bg-secondary', text: 'Pending' }
+  }
+}
+
 onMounted(() => {
   loadItems(true)
 })
@@ -182,12 +212,29 @@ watch(
       <div v-else class="row g-3">
         <div v-for="item in items" :key="item.id" class="col-12 col-md-6 col-lg-4">
           <article class="card h-100 border-0 shadow-sm">
-            <div class="card-body d-grid gap-2">
-              <span class="badge text-bg-primary-subtle text-primary-emphasis d-inline-flex px-3 py-2">
-                {{ item.category || 'Item' }}
-              </span>
+            <div class="card-body d-flex flex-column gap-2">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <span class="badge text-bg-primary-subtle text-primary-emphasis px-3 py-2">
+                  {{ item.category || 'Item' }}
+                </span>
+                <span
+                  v-if="item.matching_status"
+                  :class="`badge ${getMatchingStatusBadge(item.matching_status).class} text-white`"
+                >
+                  {{ getMatchingStatusBadge(item.matching_status).text }}
+                </span>
+              </div>
               <h2 class="h5 mb-0">{{ item.brand || item.model || 'Lost item' }}</h2>
-              <p class="text-muted mb-0">{{ item.description || 'No description provided.' }}</p>
+              <p class="text-muted mb-0 flex-grow-1">{{ item.description || 'No description provided.' }}</p>
+
+              <button
+                v-if="item.matching_status === 'completed'"
+                type="button"
+                class="btn btn-sm btn-outline-primary mt-2"
+                @click="openMatchesModal(item)"
+              >
+                View Matches
+              </button>
             </div>
             <div class="card-footer bg-white border-0">
               <div class="small text-muted">
@@ -208,5 +255,18 @@ watch(
         </button>
       </div>
     </div>
+
+    <!-- Matches Modal -->
+    <Modal
+      v-model="showMatchesModal"
+      :title="`Potential Matches for ${selectedLostItem?.brand || selectedLostItem?.model || 'Lost Item'}`"
+      size="lg"
+      @cancel="closeMatchesModal"
+    >
+      <MatchesDisplay
+        v-if="selectedLostItem"
+        :lost-item-id="selectedLostItem.id"
+      />
+    </Modal>
   </section>
 </template>
