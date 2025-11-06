@@ -32,6 +32,7 @@ const email = ref('')
 const password = ref('')
 const fullName = ref('')
 const loading = ref(false)
+const formLocked = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
@@ -112,11 +113,11 @@ const goToMode = (targetMode) => {
 const resetFeedback = () => {
   errorMessage.value = ''
   successMessage.value = ''
-  clearSignupSuccessFlag()
+  formLocked.value = false
 }
 
 const handleSubmit = async () => {
-  if (loading.value) return
+  if (loading.value || formLocked.value) return
 
   resetFeedback()
 
@@ -144,6 +145,7 @@ const handleSubmit = async () => {
 
       if (!response?.session) {
         successMessage.value = 'Registration successful! Please verify your email before signing in.'
+        formLocked.value = true
         return
       }
 
@@ -212,6 +214,7 @@ const handleSubmit = async () => {
         autocomplete="name"
         name="full-name"
         required
+        :disabled="loading || formLocked"
       />
 
       <UiInput
@@ -223,6 +226,7 @@ const handleSubmit = async () => {
         placeholder="your.name@smu.edu.sg"
         autocomplete="email"
         required
+        :disabled="loading || formLocked"
       />
 
       <UiInput
@@ -234,6 +238,7 @@ const handleSubmit = async () => {
         :autocomplete="isSignup ? 'new-password' : 'current-password'"
         :description="isSignup ? 'Must be at least 6 characters.' : ''"
         required
+        :disabled="loading || formLocked"
       />
 
       <UiButton
@@ -241,6 +246,7 @@ const handleSubmit = async () => {
         class="w-100 justify-content-center"
         :loading="loading"
         :icon="primaryActionIcon"
+        :disabled="formLocked"
       >
         {{ primaryActionLabel }}
       </UiButton>
