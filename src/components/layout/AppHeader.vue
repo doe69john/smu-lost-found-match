@@ -11,7 +11,7 @@ const route = useRoute()
 
 const navigation = [
   { name: 'Dashboard', path: '/dashboard' },
-  { name: 'Browse Lost', path: '/browse-lost' },
+  { name: 'My Lost Items', path: '/browse-lost' },
   { name: 'My Found Items', path: '/browse-found' },
   { name: 'I Lost My Item', path: '/report-lost', cta: true },
   { name: 'I Found an Item', path: '/report-found', cta: true }
@@ -289,7 +289,6 @@ const { isDark, toggleTheme } = useTheme()
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 2rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .app-header__nav {
@@ -328,8 +327,15 @@ const { isDark, toggleTheme } = useTheme()
   margin-left: 2rem;
 }
 
-/* Hide desktop-only elements on small screens */
-@media (max-width: 768px) {
+/* Hide mobile-only elements on larger screens */
+@media (min-width: 1025px) {
+  .only-mobile {
+    display: none !important;
+  }
+}
+
+/* Hide desktop-only elements on tablets and mobile */
+@media (max-width: 1024px) {
   .only-desktop {
     display: none !important;
   }

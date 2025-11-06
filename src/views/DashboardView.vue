@@ -38,6 +38,19 @@ const displayName = computed(() => {
   )
 })
 
+// Get Supabase storage URL for images
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  return `${supabaseUrl}/storage/v1/object/public/item-images/${imagePath}`
+}
+
+// Get up to 3 images for display
+const getItemImages = (item) => {
+  if (!item.image_metadata || !Array.isArray(item.image_metadata)) return []
+  return item.image_metadata.slice(0, 3).map(img => getImageUrl(img.path))
+}
+
 const formatDate = (value) => {
   if (!value) return 'Date unknown'
   const date = new Date(value)
@@ -157,33 +170,6 @@ onMounted(() => {
   loadDashboard()
   loadMyLostItems()
 })
-
-const quickLinks = [
-  {
-    label: 'Report a lost item',
-    description: 'Submit details about something you misplaced on campus.',
-    to: { name: 'report-lost' },
-    emoji: '🧳'
-  },
-  {
-    label: 'Report a found item',
-    description: 'Let others know what you have found so we can match it quickly.',
-    to: { name: 'report-found' },
-    emoji: '📦'
-  },
-  {
-    label: 'Browse lost reports',
-    description: 'Search active reports and look for potential matches.',
-    to: { name: 'browse-lost' },
-    emoji: '🔍'
-  },
-  {
-    label: 'Browse found submissions',
-    description: 'Review items others have handed in recently.',
-    to: { name: 'browse-found' },
-    emoji: '🤝'
-  }
-]
 </script>
 
 <template>
@@ -221,64 +207,85 @@ const quickLinks = [
           <div
             v-for="item in myLostItems"
             :key="item.id"
-            class="card"
+            class="card position-relative"
+            :class="{ 'item-claimed': item.status === 'claimed' }"
             style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);"
           >
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start gap-3">
-                <div class="flex-grow-1">
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="badge bg-primary-subtle text-primary">
-                      {{ item.category || 'Item' }}
-                    </span>
-                    <span
-                      v-if="item.status === 'claimed'"
-                      class="badge bg-success text-white"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-check-circle-fill me-1" viewBox="0 0 16 16" style="margin-bottom: 2px;">
-                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-                      </svg>
-                      Claimed
-                    </span>
-                    <span
-                      v-else-if="item.matching_status"
-                      :class="`badge ${getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).class} text-white`"
-                    >
-                      {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).icon }}
-                      {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).text }}
-                    </span>
+              <div class="d-flex gap-3">
+                <!-- Image Section -->
+                <div class="item-images flex-shrink-0">
+                  <div v-if="getItemImages(item).length === 0" class="image-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                      <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                    </svg>
                   </div>
-
-                  <h3 class="h6 fw-semibold mb-1 text-dark">
-                    {{ item.model || item.brand || 'Lost item' }}
-                  </h3>
-                  <p class="text-muted small mb-2">
-                    <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }}</span>
-                    <span v-if="item.brand && item.model"> • </span>
-                    {{ item.description || 'No description provided.' }}
-                  </p>
-
-                  <div class="d-flex flex-wrap gap-3 small text-muted">
-                    <span>
-                      <span class="me-1">📍</span>
-                      {{ item.location_lost || 'Unknown location' }}
-                    </span>
-                    <span>
-                      <span class="me-1">🗓</span>
-                      {{ formatDate(item.date_lost) }}
-                    </span>
+                  <div v-else-if="getItemImages(item).length === 1" class="single-image">
+                    <img :src="getItemImages(item)[0]" :alt="item.model || item.brand || 'Lost item'" />
+                  </div>
+                  <div v-else class="multi-images">
+                    <img v-for="(img, idx) in getItemImages(item)" :key="idx" :src="img" :alt="`${item.model || item.brand || 'Lost item'} ${idx + 1}`" />
                   </div>
                 </div>
 
-                <!-- View Matches/Details Button -->
-                <div v-if="item.matching_status === 'completed' && (matchCounts[item.id] > 0 || item.status === 'claimed')">
-                  <button
-                    type="button"
-                    :class="`btn btn-sm ${item.status === 'claimed' ? 'btn-success' : 'btn-primary'}`"
-                    @click="openMatchesModal(item)"
-                  >
-                    {{ item.status === 'claimed' ? 'View Details' : `View ${matchCounts[item.id] === 1 ? 'Match' : 'Matches'}` }}
-                  </button>
+                <!-- Content Section -->
+                <div class="flex-grow-1 d-flex flex-column flex-sm-row gap-3">
+                  <div class="flex-grow-1">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                      <span class="badge bg-primary-subtle text-primary">
+                        {{ item.category || 'Item' }}
+                      </span>
+                      <span
+                        v-if="item.status === 'claimed'"
+                        class="badge bg-success text-white"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-check-circle-fill me-1" viewBox="0 0 16 16" style="margin-bottom: 2px;">
+                          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                        </svg>
+                        Claimed
+                      </span>
+                      <span
+                        v-else-if="item.matching_status"
+                        :class="`badge ${getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).class} text-white`"
+                      >
+                        {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).icon }}
+                        {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).text }}
+                      </span>
+                    </div>
+
+                    <h3 class="h6 fw-semibold mb-1 text-dark">
+                      {{ item.model || item.brand || 'Lost item' }}
+                    </h3>
+                    <p class="text-muted small mb-2">
+                      <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }}</span>
+                      <span v-if="item.brand && item.model"> • </span>
+                      {{ item.description || 'No description provided.' }}
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-3 small text-muted">
+                      <span>
+                        <span class="me-1">📍</span>
+                        {{ item.location_lost || 'Unknown location' }}
+                      </span>
+                      <span>
+                        <span class="me-1">🗓</span>
+                        {{ formatDate(item.date_lost) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- View Matches/Details Button -->
+                  <div v-if="item.matching_status === 'completed' && (matchCounts[item.id] > 0 || item.status === 'claimed')" class="d-flex align-items-start">
+                    <button
+                      type="button"
+                      :class="`btn btn-sm ${item.status === 'claimed' ? 'btn-success' : 'btn-primary'}`"
+                      @click="openMatchesModal(item)"
+                      style="white-space: nowrap;"
+                    >
+                      {{ item.status === 'claimed' ? 'Details' : 'Matches' }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -343,26 +350,6 @@ const quickLinks = [
       </div>
     </div>
   </div>
-      <div class="col-lg-12">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <h2 class="card-title h6 text-uppercase text-muted">Quick actions</h2>
-            <ul class="list-unstyled mb-0 quick-links">
-              <li v-for="link in quickLinks" :key="link.label" class="mb-2">
-                <RouterLink class="quick-link text-decoration-none" :to="link.to">
-                  <span class="quick-icon" aria-hidden="true">
-                    {{ link.emoji }}
-                  </span>
-                  <span>
-                    <span class="link-label d-block">{{ link.label }}</span>
-                    <small class="quick-description d-block small">{{ link.description }}</small>
-                  </span>
-                </RouterLink>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div v-if="errorMessage" class="alert alert-warning" role="alert">
@@ -557,6 +544,83 @@ html.dark .quick-link:focus-visible .link-label,
 html.dark .quick-description,
 .dark .quick-description {
   color: color-mix(in srgb, var(--text-muted) 82%, var(--text-body) 18%);
+}
+
+/* Item images styling */
+.item-images {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+.single-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.multi-images {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+}
+
+.multi-images img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.multi-images img:first-child {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.multi-images img:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.multi-images img:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* Claimed item blur effect */
+.item-claimed {
+  opacity: 0.7;
+}
+
+.item-claimed .card-body {
+  filter: blur(1.5px);
+  pointer-events: none;
+}
+
+.item-claimed button {
+  filter: none;
+  pointer-events: all;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .item-images {
+    width: 80px;
+    height: 80px;
+  }
 }
 
 </style>

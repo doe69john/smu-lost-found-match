@@ -7,6 +7,9 @@ import { useLoadingDelay } from '@/composables/useLoadingDelay'
 import { fetchLostItems } from '../services/lostItemsService'
 import { fetchMatchesForLostItem } from '../services/matchesService'
 import { pushToast } from '../composables/useToast'
+import { useAuth } from '../composables/useAuth'
+
+const { user } = useAuth()
 
 const categories = [
   { label: 'All categories', value: 'all' },
@@ -48,6 +51,12 @@ const formatDate = (value) => {
 
 const buildFilterParams = () => {
   const params = {}
+
+  // Filter by current user - only show items they lost
+  if (user.value?.id) {
+    params.user_id = `eq.${user.value.id}`
+  }
+
   if (filters.category !== 'all') {
     params.category = `eq.${filters.category}`
   }
@@ -153,6 +162,19 @@ const getMatchingStatusBadge = (status, matchCount = 0) => {
   }
 }
 
+// Get Supabase storage URL for images
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  return `${supabaseUrl}/storage/v1/object/public/item-images/${imagePath}`
+}
+
+// Get up to 3 images for display
+const getItemImages = (item) => {
+  if (!item.image_metadata || !Array.isArray(item.image_metadata)) return []
+  return item.image_metadata.slice(0, 3).map(img => getImageUrl(img.path))
+}
+
 onMounted(() => {
   loadItems(true)
 })
@@ -186,9 +208,9 @@ watch(
 <template>
   <section class="d-grid gap-4">
     <header>
-      <h1 class="h3 fw-semibold mb-1">Browse lost items</h1>
+      <h1 class="h3 fw-semibold mb-1">My Lost Items</h1>
       <p class="text-muted mb-0">
-        Search recent reports submitted by students and staff. Use filters to narrow down the results.
+        View and manage the items you have reported as lost.
       </p>
     </header>
 
@@ -235,30 +257,57 @@ watch(
         <div v-for="item in items" :key="item.id" class="col-12 col-md-6 col-lg-4">
           <article class="card h-100 border-0 shadow-sm">
             <div class="card-body d-flex flex-column gap-2">
-              <div class="d-flex justify-content-between align-items-start gap-2">
-                <span class="badge text-bg-primary-subtle text-primary-emphasis px-3 py-2">
-                  {{ item.category || 'Item' }}
-                </span>
-                <span
-                  v-if="item.matching_status"
-                  :class="`badge ${getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).class} text-white`"
-                >
-                  {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).text }}
-                </span>
-              </div>
-              <h2 class="h5 mb-0">{{ item.model || item.brand || 'Lost item' }}</h2>
-              <p class="text-muted mb-0 flex-grow-1">
-                <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
-              </p>
+              <div class="d-flex gap-3">
+                <!-- Image Display -->
+                <div class="item-images flex-shrink-0">
+                  <div v-if="getItemImages(item).length === 0" class="image-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                  </div>
+                  <div v-else-if="getItemImages(item).length === 1" class="single-image">
+                    <img :src="getItemImages(item)[0]" :alt="`${item.brand || ''} ${item.model || 'item'}`" />
+                  </div>
+                  <div v-else class="multi-images">
+                    <img
+                      v-for="(img, idx) in getItemImages(item)"
+                      :key="idx"
+                      :src="img"
+                      :alt="`${item.brand || ''} ${item.model || 'item'} - image ${idx + 1}`"
+                    />
+                  </div>
+                </div>
 
-              <button
-                v-if="item.matching_status === 'completed' && matchCounts[item.id] > 0"
-                type="button"
-                class="btn btn-sm btn-outline-primary mt-2"
-                @click="openMatchesModal(item)"
-              >
-                View {{ matchCounts[item.id] === 1 ? 'Match' : 'Matches' }}
-              </button>
+                <!-- Content -->
+                <div class="flex-grow-1 d-flex flex-column gap-2">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <span class="badge text-bg-primary-subtle text-primary-emphasis px-3 py-2">
+                      {{ item.category || 'Item' }}
+                    </span>
+                    <span
+                      v-if="item.matching_status"
+                      :class="`badge ${getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).class} text-white`"
+                    >
+                      {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).text }}
+                    </span>
+                  </div>
+                  <h2 class="h5 mb-0">{{ item.model || item.brand || 'Lost item' }}</h2>
+                  <p class="text-muted mb-0 flex-grow-1">
+                    <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
+                  </p>
+
+                  <button
+                    v-if="item.matching_status === 'completed' && matchCounts[item.id] > 0"
+                    type="button"
+                    class="btn btn-sm btn-outline-primary mt-2"
+                    @click="openMatchesModal(item)"
+                  >
+                    View {{ matchCounts[item.id] === 1 ? 'Match' : 'Matches' }}
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="card-footer bg-white border-0">
               <div class="small text-muted">
@@ -294,3 +343,64 @@ watch(
     </Modal>
   </section>
 </template>
+
+<style scoped>
+/* Image display styles */
+.item-images {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  background: #f3f4f6;
+}
+
+.single-image {
+  width: 100%;
+  height: 100%;
+}
+
+.single-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.multi-images {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+}
+
+.multi-images img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.multi-images img:first-child {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .item-images {
+    width: 80px;
+    height: 80px;
+  }
+}
+</style>
