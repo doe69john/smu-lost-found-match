@@ -29,6 +29,7 @@ const email = ref('')
 const password = ref('')
 const fullName = ref('')
 const loading = ref(false)
+const formLocked = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
@@ -71,17 +72,25 @@ const redirectTarget = computed(() => {
 
 const goToMode = (targetMode) => {
   if (targetMode === mode.value) return
-  const query = route.query && Object.keys(route.query).length ? { ...route.query } : undefined
-  router.replace(targetMode === modes.signup ? { name: 'auth-signup', query } : { name: 'auth', query })
+  resetFeedback()
+
+  const target = targetMode === modes.signup ? { name: 'auth-signup' } : { name: 'auth' }
+
+  if (route.query && Object.keys(route.query).length) {
+    target.query = { ...route.query }
+  }
+
+  router.replace(target)
 }
 
 const resetFeedback = () => {
   errorMessage.value = ''
   successMessage.value = ''
+  formLocked.value = false
 }
 
 const handleSubmit = async () => {
-  if (loading.value) return
+  if (loading.value || formLocked.value) return
 
   resetFeedback()
 
@@ -109,8 +118,7 @@ const handleSubmit = async () => {
 
       if (!response?.session) {
         successMessage.value = 'Registration successful! Please verify your email before signing in.'
-        mode.value = modes.signin
-        router.replace({ name: 'auth', query: route.query })
+        formLocked.value = true
         return
       }
 
@@ -144,6 +152,7 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
+
 </script>
 
 <template>
@@ -165,9 +174,6 @@ const handleSubmit = async () => {
     </header>
 
     <form class="d-grid gap-3" @submit.prevent="handleSubmit">
-      <div v-if="successMessage" class="alert alert-success" role="status">
-        {{ successMessage }}
-      </div>
       <div v-if="errorMessage" class="alert alert-danger" role="alert">
         {{ errorMessage }}
       </div>
@@ -181,6 +187,7 @@ const handleSubmit = async () => {
         autocomplete="name"
         name="full-name"
         required
+        :disabled="loading || formLocked"
       />
 
       <UiInput
@@ -192,6 +199,7 @@ const handleSubmit = async () => {
         placeholder="your.name@smu.edu.sg"
         autocomplete="email"
         required
+        :disabled="loading || formLocked"
       />
 
       <UiInput
@@ -203,6 +211,7 @@ const handleSubmit = async () => {
         :autocomplete="isSignup ? 'new-password' : 'current-password'"
         :description="isSignup ? 'Must be at least 6 characters.' : ''"
         required
+        :disabled="loading || formLocked"
       />
 
       <UiButton
@@ -210,9 +219,14 @@ const handleSubmit = async () => {
         class="w-100 justify-content-center"
         :loading="loading"
         :icon="primaryActionIcon"
+        :disabled="formLocked"
       >
         {{ primaryActionLabel }}
       </UiButton>
+
+      <div v-if="successMessage" class="alert alert-success mt-2 mb-0" role="status">
+        {{ successMessage }}
+      </div>
     </form>
 
     <p class="text-center text-muted small mb-0">
