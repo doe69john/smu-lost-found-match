@@ -88,8 +88,18 @@ const closeMatchesModal = () => {
 }
 
 const handleMatchClaimed = async () => {
+  // Close the modal
+  closeMatchesModal()
+
   // Refresh the lost items list to show updated status
   await loadMyLostItems()
+
+  // Show a success message
+  pushToast({
+    title: 'Item claimed!',
+    message: 'The dashboard has been updated to reflect your claimed item.',
+    variant: 'success'
+  })
 }
 
 // Load user's own lost items with matching status
@@ -288,12 +298,25 @@ onMounted(() => {
                   <!-- View Matches/Details Button -->
                   <div v-if="item.matching_status === 'completed' && (matchCounts[item.id] > 0 || item.status === 'claimed')" class="d-flex align-items-start">
                     <button
+                      v-if="item.status === 'claimed'"
                       type="button"
-                      :class="`btn btn-sm ${item.status === 'claimed' ? 'btn-success' : 'btn-primary'}`"
+                      class="btn btn-sm btn-success"
+                      disabled
+                      style="white-space: nowrap; opacity: 0.7; cursor: not-allowed;"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-check-circle-fill me-1" viewBox="0 0 16 16" style="margin-bottom: 2px;">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                      </svg>
+                      Claimed
+                    </button>
+                    <button
+                      v-else
+                      type="button"
+                      class="btn btn-sm btn-primary"
                       @click="openMatchesModal(item)"
                       style="white-space: nowrap;"
                     >
-                      {{ item.status === 'claimed' ? 'Details' : 'Matches' }}
+                      Matches
                     </button>
                   </div>
                 </div>

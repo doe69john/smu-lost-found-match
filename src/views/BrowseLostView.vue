@@ -259,7 +259,7 @@ watch(
             <div class="card-body d-flex flex-column gap-2">
               <div class="d-flex gap-3">
                 <!-- Image Display -->
-                <div class="item-images flex-shrink-0">
+                <div class="item-images flex-shrink-0 position-relative">
                   <div v-if="getItemImages(item).length === 0" class="image-placeholder">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -278,6 +278,16 @@ watch(
                       :alt="`${item.brand || ''} ${item.model || 'item'} - image ${idx + 1}`"
                     />
                   </div>
+
+                  <!-- Claimed Overlay Badge -->
+                  <div v-if="item.status === 'claimed'" class="claimed-overlay">
+                    <span class="claimed-badge">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                      </svg>
+                      Claimed
+                    </span>
+                  </div>
                 </div>
 
                 <!-- Content -->
@@ -287,7 +297,16 @@ watch(
                       {{ item.category || 'Item' }}
                     </span>
                     <span
-                      v-if="item.matching_status"
+                      v-if="item.status === 'claimed'"
+                      class="badge bg-success text-white"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-check-circle-fill me-1" viewBox="0 0 16 16" style="margin-bottom: 2px;">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                      </svg>
+                      Claimed
+                    </span>
+                    <span
+                      v-else-if="item.matching_status"
                       :class="`badge ${getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).class} text-white`"
                     >
                       {{ getMatchingStatusBadge(item.matching_status, matchCounts[item.id] || 0).text }}
@@ -299,7 +318,19 @@ watch(
                   </p>
 
                   <button
-                    v-if="item.matching_status === 'completed' && matchCounts[item.id] > 0"
+                    v-if="item.status === 'claimed'"
+                    type="button"
+                    class="btn btn-sm btn-success mt-2"
+                    disabled
+                    style="opacity: 0.7; cursor: not-allowed;"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-check-circle-fill me-1" viewBox="0 0 16 16" style="margin-bottom: 2px;">
+                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>
+                    Claimed
+                  </button>
+                  <button
+                    v-else-if="item.matching_status === 'completed' && matchCounts[item.id] > 0"
                     type="button"
                     class="btn btn-sm btn-outline-primary mt-2"
                     @click="openMatchesModal(item)"
@@ -419,6 +450,41 @@ html.dark .badge.text-bg-primary-subtle,
   background-color: rgba(99, 102, 241, 0.3) !important;
   color: #c7d2fe !important;
   font-weight: 600;
+}
+
+/* Claimed overlay badge on images */
+.claimed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.claimed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #10b981;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.claimed-badge svg {
+  flex-shrink: 0;
 }
 
 /* Responsive adjustments */
