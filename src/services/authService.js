@@ -223,6 +223,30 @@ export async function requestPasswordReset({ email, redirectTo }) {
   }
 }
 
+export async function verifyRecoveryToken({ token }) {
+  try {
+    const { data } = await httpClient.post(`${AUTH_BASE_PATH}/verify`, {
+      token,
+      type: 'recovery'
+    })
+
+    const session = extractSession(data)
+    if (session?.access_token) {
+      const persisted = persistSupabaseSession(session)
+      return { ...data, session: persisted }
+    }
+
+    throw new Error('Unable to verify the recovery session from this link.')
+  } catch (error) {
+    throw new Error(
+      normalizeSupabaseError(
+        error,
+        'This reset link is invalid or has expired. Please request a new one.'
+      )
+    )
+  }
+}
+
 export async function updateUserPassword({ password, accessToken } = {}) {
   try {
     const config = {}

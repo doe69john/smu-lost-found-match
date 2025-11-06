@@ -46,7 +46,10 @@ const sensitiveParams = [
   'expires_in',
   'expires_at',
   'token_type',
-  'type'
+  'type',
+  'token',
+  'recovery_token',
+  'oob_code'
 ]
 
 function parseRecoveryParams(currentRoute) {
@@ -72,7 +75,9 @@ function parseRecoveryParams(currentRoute) {
   }
 
   if (!params.access_token || !params.refresh_token) {
-    return null
+    if (!params.token && !params.recovery_token && !params.oob_code) {
+      return null
+    }
   }
 
   if (params.type && params.type !== 'recovery') {
