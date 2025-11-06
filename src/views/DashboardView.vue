@@ -447,7 +447,7 @@ onMounted(() => {
     <!-- Matches Modal -->
     <Modal
       v-model="showMatchesModal"
-      :title="`Potential Matches for ${selectedLostItem?.brand || selectedLostItem?.model || 'Lost Item'}`"
+      :title="`Potential Matches for ${selectedLostItem?.model || selectedLostItem?.brand || 'Lost Item'}`"
       size="lg"
       @cancel="closeMatchesModal"
     >

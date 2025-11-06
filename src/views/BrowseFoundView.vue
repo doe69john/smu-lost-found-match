@@ -278,7 +278,7 @@ watch(
     <!-- Item Details Modal -->
     <Modal
       v-model="showDetailsModal"
-      :title="`${selectedFoundItem?.brand || selectedFoundItem?.model || 'Found Item'} Details`"
+      :title="`${selectedFoundItem?.model || selectedFoundItem?.brand || 'Found Item'} Details`"
       size="lg"
       @cancel="closeDetailsModal"
     >
