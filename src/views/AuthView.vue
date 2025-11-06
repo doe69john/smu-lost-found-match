@@ -16,6 +16,9 @@ const modes = {
   signup: 'signup'
 }
 
+const SIGNUP_SUCCESS_FLAG = 'signupSuccess'
+const SIGNUP_SUCCESS_MESSAGE = 'Registration successful! Please verify your email before signing in.'
+
 const mode = ref(route.meta?.authMode === 'signup' || route.name === 'auth-signup' ? modes.signup : modes.signin)
 
 watch(
@@ -34,6 +37,30 @@ const errorMessage = ref('')
 const successMessage = ref('')
 
 const isSignup = computed(() => mode.value === modes.signup)
+
+const withoutSignupSuccessFlag = (query) => {
+  if (!query || typeof query !== 'object') {
+    return undefined
+  }
+
+  const sanitizedQuery = { ...query }
+  delete sanitizedQuery[SIGNUP_SUCCESS_FLAG]
+
+  return Object.keys(sanitizedQuery).length ? sanitizedQuery : undefined
+}
+
+const clearSignupSuccessFlag = () => {
+  if (!route.query?.[SIGNUP_SUCCESS_FLAG]) {
+    return
+  }
+
+  const sanitizedQuery = withoutSignupSuccessFlag(route.query)
+  const navigationTarget = sanitizedQuery
+    ? { path: route.path, query: sanitizedQuery }
+    : { path: route.path }
+
+  router.replace(navigationTarget)
+}
 
 const primaryActionIcon = computed(() => (isSignup.value ? UserPlus : LogIn))
 
