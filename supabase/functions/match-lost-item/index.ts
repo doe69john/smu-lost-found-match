@@ -176,27 +176,43 @@ function daysBetween(date1: Date, date2: Date): number {
 
 // Calculate location similarity (simple string matching)
 function calculateLocationSimilarity(location1: string, location2: string): number {
-  if (!location1 || !location2) return 0
+  // Always return a decent base score since all items are in SMU
+  if (!location1 || !location2) return 0.5
 
   const loc1 = location1.toLowerCase().trim()
   const loc2 = location2.toLowerCase().trim()
 
-  // Exact match
-  if (loc1 === loc2) return 1.0
+  // Common SMU location abbreviations and full names
+  const normalizeLocation = (loc: string) => {
+    return loc
+      .replace('sr', 'seminar room')
+      .replace('soa', 'school of accountancy')
+      .replace('scis', 'school of computing and information systems')
+      .replace('smu', '')
+      .replace('level', 'lvl')
+      .replace('lv', 'lvl')
+  }
 
-  // One contains the other
-  if (loc1.includes(loc2) || loc2.includes(loc1)) return 0.7
+  const norm1 = normalizeLocation(loc1)
+  const norm2 = normalizeLocation(loc2)
+
+  // Exact match after normalization
+  if (norm1 === norm2) return 1.0
+
+  // One contains the other after normalization
+  if (norm1.includes(norm2) || norm2.includes(norm1)) return 0.9
 
   // Check for common words (building names, floor numbers, etc.)
-  const words1 = loc1.split(/\s+/)
-  const words2 = loc2.split(/\s+/)
+  const words1 = norm1.split(/\s+/)
+  const words2 = norm2.split(/\s+/)
   const commonWords = words1.filter(w => w.length > 2 && words2.includes(w))
 
   if (commonWords.length > 0) {
-    return Math.min(0.5, commonWords.length * 0.2)
+    return Math.min(0.8, 0.5 + commonWords.length * 0.2) // Higher base similarity for common words
   }
 
-  return 0
+  // Base score for any SMU location
+  return 0.5
 }
 
 // Calculate text-based similarity between metadata
@@ -204,12 +220,12 @@ function calculateMetadataSimilarity(lostItem: LostItem, foundItem: FoundItem): 
   // Use weighted scoring with emphasis on time, location, and unique identifiers
   let totalScore = 0
   const weights = {
-    dateProximity: 4.0,   // MOST IMPORTANT - items lost and found around same time
-    location: 3.5,        // VERY IMPORTANT - items lost and found in same area
-    model: 2.5,          // Important - identifies the specific item type
-    category: 2.0,       // Important - but many items share categories
-    color: 1.0,          // Supporting evidence
-    brand: 0.3,          // MINIMAL - many items share brands (Apple, Samsung, etc.)
+    model: 5.0,          // Most important - exact model matches should dominate
+    category: 2.0,       // Important but not critical
+    brand: 2.0,          // Increased importance for brand
+    color: 1.5,          // Color is helpful but not critical
+    location: 1.0,       // Made location less important
+    dateProximity: 1.0,  // Made date less important
   }
   let totalWeight = 0
 
@@ -425,12 +441,19 @@ serve(async (req) => {
     // Analyze lost item image (only if Vision API key is available)
     let lostAnnotation: ImageAnnotation = {}
     if (visionApiKey) {
+      console.log('Vision API key is available - analyzing images')
       try {
         lostAnnotation = await analyzeImage(lostImageUrl, visionApiKey)
-        console.log('Lost item image analyzed successfully')
+        console.log('Lost item image analyzed successfully:', {
+          hasWebDetection: !!lostAnnotation.webDetection,
+          hasLabels: !!lostAnnotation.labelAnnotations,
+          hasColors: !!lostAnnotation.imagePropertiesAnnotation
+        })
       } catch (error) {
         console.error('Failed to analyze lost item image:', error)
       }
+    } else {
+      console.log('Vision API key NOT available - using metadata only')
     }
 
     // Compare against all found items
@@ -453,13 +476,14 @@ serve(async (req) => {
         try {
           const foundAnnotation = await analyzeImage(foundImageUrl, visionApiKey)
           imageScore = calculateImageSimilarity(lostAnnotation, foundAnnotation)
+          console.log(`Image similarity for ${foundItem.brand} ${foundItem.model}: ${imageScore.toFixed(2)}, Metadata: ${metadataScore.toFixed(2)}`)
         } catch (error) {
           console.error(`Failed to analyze found item ${foundItem.id}:`, error)
         }
       }
 
       // Weighted combination: 60% image similarity, 40% metadata similarity
-      const finalScore = visionApiKey
+      const finalScore = visionApiKey && Object.keys(lostAnnotation).length > 0
         ? imageScore * 0.6 + metadataScore * 0.4
         : metadataScore
 
@@ -469,13 +493,34 @@ serve(async (req) => {
         !lostItemTyped.model.toLowerCase().includes(foundItem.model.toLowerCase()) &&
         !foundItem.model.toLowerCase().includes(lostItemTyped.model.toLowerCase())
 
-      // Increase threshold to 40% and reject if models completely mismatch
-      if (finalScore > 0.4 && !hasModelMismatch) {
-        matches.push({ foundItem, score: finalScore })
-      } else if (finalScore > 0.6 && hasModelMismatch) {
-        // Only include model mismatches if they have VERY high confidence (60%+)
-        // This handles cases where model names might be entered differently
-        matches.push({ foundItem, score: finalScore })
+      // Super lenient matching
+      let shouldMatch = false;
+      let boostScore = finalScore;
+
+      // If models match exactly or are very similar, boost the score significantly
+      if (lostItemTyped.model && foundItem.model) {
+        const lostModel = lostItemTyped.model.toLowerCase();
+        const foundModel = foundItem.model.toLowerCase();
+        
+        if (lostModel === foundModel) {
+          shouldMatch = true;
+          boostScore = Math.max(finalScore * 2, 0.6); // Boost exact matches
+        } else if (lostModel.includes(foundModel) || foundModel.includes(lostModel)) {
+          shouldMatch = true;
+          boostScore = Math.max(finalScore * 1.5, 0.5); // Boost partial matches
+        }
+      }
+
+      // If category and brand match, consider it a potential match
+      if (lostItemTyped.category === foundItem.category && 
+          lostItemTyped.brand === foundItem.brand) {
+        shouldMatch = true;
+        boostScore = Math.max(finalScore, 0.3);
+      }
+
+      // Include if score is decent or if we determined it should match
+      if (finalScore > 0.15 || shouldMatch) {
+        matches.push({ foundItem, score: boostScore })
       }
     }
 
