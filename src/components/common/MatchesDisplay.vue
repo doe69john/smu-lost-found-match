@@ -23,6 +23,7 @@ const errorMessage = ref('')
 const claimingMatchId = ref(null)
 const verifiedMatches = ref(new Set())
 const verificationData = ref({})
+const verificationErrors = ref({})
 
 const hasMatches = computed(() => matches.value.length > 0)
 
@@ -168,6 +169,9 @@ const verifyMatch = (match) => {
     verificationData.value[matchId] = { location: '', uniqueIdentifier: '' }
   }
 
+  // Clear previous errors
+  verificationErrors.value[matchId] = { location: '', identifier: '' }
+
   const userLocation = verificationData.value[matchId].location || ''
   const userIdentifier = verificationData.value[matchId].uniqueIdentifier || ''
 
@@ -176,6 +180,33 @@ const verifyMatch = (match) => {
 
   // Calculate identifier overlap with description
   const identifierMatch = calculateWordOverlap(userIdentifier, foundItem?.description || '')
+
+  // Validation thresholds
+  const LOCATION_THRESHOLD = 0.2  // At least 20% word overlap required
+  const IDENTIFIER_THRESHOLD = 0.2  // At least 20% word overlap required
+
+  let hasErrors = false
+
+  // Check location match
+  if (locationMatch < LOCATION_THRESHOLD) {
+    verificationErrors.value[matchId].location = 'Location does not match the found item report. Please check your answer.'
+    hasErrors = true
+  }
+
+  // Check identifier match
+  if (identifierMatch < IDENTIFIER_THRESHOLD) {
+    verificationErrors.value[matchId].identifier = 'Identifiers do not match the found item description. Please check your answer.'
+    hasErrors = true
+  }
+
+  // If validation fails, don't proceed
+  if (hasErrors) {
+    pushToast({
+      type: 'error',
+      message: 'Verification failed. Your answers don\'t match the found item details.'
+    })
+    return
+  }
 
   // Adjust confidence score based on verification
   // Base score + bonus from verification (max +20%)
@@ -192,23 +223,11 @@ const verifyMatch = (match) => {
     matches.value[matchIndex].confidence_score = adjustedScore
   }
 
-  // Show feedback
-  if (locationMatch > 0.5 || identifierMatch > 0.5) {
-    pushToast({
-      type: 'success',
-      message: 'Your answers match! This appears to be your item.'
-    })
-  } else if (locationMatch > 0.2 || identifierMatch > 0.2) {
-    pushToast({
-      type: 'info',
-      message: 'Some details match. Please review carefully before claiming.'
-    })
-  } else {
-    pushToast({
-      type: 'warning',
-      message: 'Your answers don\'t match well. This might not be your item.'
-    })
-  }
+  // Show success feedback
+  pushToast({
+    type: 'success',
+    message: 'Verification successful! Your answers match the found item details.'
+  })
 }
 
 const isVerified = (matchId) => {
@@ -309,20 +328,26 @@ defineExpose({
                     <label class="form-label small fw-semibold">1. Where did you lose it?</label>
                     <input
                       type="text"
-                      class="form-control form-control-sm"
+                      :class="['form-control', 'form-control-sm', { 'is-invalid': verificationErrors[match.id]?.location }]"
                       v-model="initVerificationData(match.id).location"
                       placeholder="e.g., School of Economics SR 3-2"
                     />
+                    <div v-if="verificationErrors[match.id]?.location" class="invalid-feedback d-block">
+                      {{ verificationErrors[match.id].location }}
+                    </div>
                   </div>
 
                   <div class="mb-3">
                     <label class="form-label small fw-semibold">2. Any unique identifiers? (scratches, stickers, serial numbers, etc.)</label>
                     <textarea
-                      class="form-control form-control-sm"
+                      :class="['form-control', 'form-control-sm', { 'is-invalid': verificationErrors[match.id]?.identifier }]"
                       rows="2"
                       v-model="initVerificationData(match.id).uniqueIdentifier"
                       placeholder="e.g., Visible scratches at the side, blue sticker on back"
                     ></textarea>
+                    <div v-if="verificationErrors[match.id]?.identifier" class="invalid-feedback d-block">
+                      {{ verificationErrors[match.id].identifier }}
+                    </div>
                   </div>
 
                   <button
