@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { fetchMatchesForLostItem, updateMatchStatus } from '@/services/matchesService'
 import { pushToast } from '@/composables/useToast'
 import PulseLoader from './PulseLoader.vue'
+import Modal from '@/components/ui/Modal.vue'
 
 const props = defineProps({
   lostItemId: {
@@ -24,6 +25,8 @@ const claimingMatchId = ref(null)
 const verifiedMatches = ref(new Set())
 const verificationData = ref({})
 const verificationErrors = ref({})
+const showCollectionModal = ref(false)
+const claimedMatch = ref(null)
 
 const hasMatches = computed(() => matches.value.length > 0)
 
@@ -114,12 +117,24 @@ const claimMatch = async (match) => {
       matches.value[matchIndex].status = 'confirmed'
     }
 
-    // Emit event to parent to refresh dashboard
-    emit('matchClaimed', props.lostItemId)
+    // Store claimed match and show collection modal after a small delay
+    // This ensures the confirm dialog is fully closed before showing the modal
+    claimedMatch.value = match
+    console.log('Setting claimedMatch:', claimedMatch.value)
+    console.log('Security office data:', getSecurityOffice(match))
+
+    // Show modal immediately - don't wait
+    setTimeout(() => {
+      showCollectionModal.value = true
+      console.log('Collection modal should be showing now:', showCollectionModal.value)
+    }, 150)
+
+    // Don't emit event to parent yet - wait for user to close the collection modal
+    // The modal will emit when closed if needed
 
     pushToast({
       type: 'success',
-      message: 'Match confirmed! Check the security office details below to collect your item.'
+      message: 'Match confirmed! Check the collection details.'
     })
   } catch (error) {
     console.error('Error claiming match:', error)
@@ -132,9 +147,29 @@ const claimMatch = async (match) => {
   }
 }
 
+const closeCollectionModal = () => {
+  showCollectionModal.value = false
+  const lostItemId = props.lostItemId
+  claimedMatch.value = null
+
+  console.log('Collection modal closed, emitting matchClaimed event for:', lostItemId)
+
+  // Emit event to parent to refresh dashboard after modal closes
+  emit('matchClaimed', lostItemId)
+}
+
 const getSecurityOffice = (match) => {
   const foundItem = getFoundItem(match)
-  return foundItem?.security_offices || null
+  console.log('getSecurityOffice - foundItem:', foundItem)
+  console.log('getSecurityOffice - security_offices:', foundItem?.security_offices)
+
+  // Handle both possible response structures from Supabase
+  // Could be: security_offices (object) or security_offices (array with one item)
+  const office = foundItem?.security_offices
+
+  if (!office) return null
+  if (Array.isArray(office)) return office[0] || null
+  return office
 }
 
 // Calculate word overlap between two strings
@@ -461,12 +496,111 @@ defineExpose({
         </div>
       </div>
     </div>
+
+    <!-- Collection Location Modal - Debug visibility -->
+    <Modal
+      v-if="showCollectionModal"
+      v-model="showCollectionModal"
+      title="Item Claimed Successfully!"
+      size="md"
+      :close-on-backdrop="true"
+      @cancel="closeCollectionModal"
+    >
+      <div v-if="claimedMatch" class="collection-modal-content">
+        <!-- Success Icon -->
+        <div class="text-center mb-4">
+          <div class="success-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-check-circle-fill text-success" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+          </div>
+          <h4 class="mt-3 mb-2">Great News!</h4>
+          <p class="text-muted">You've successfully claimed your item</p>
+        </div>
+
+        <!-- Item Details -->
+        <div class="alert alert-light border mb-4">
+          <div class="d-flex align-items-center gap-3">
+            <div v-if="getImageUrl(claimedMatch)" class="flex-shrink-0">
+              <img
+                :src="getImageUrl(claimedMatch)"
+                :alt="getFoundItem(claimedMatch)?.model || 'Item'"
+                class="rounded"
+                style="width: 80px; height: 80px; object-fit: cover;"
+              />
+            </div>
+            <div class="flex-grow-1">
+              <h6 class="mb-1">{{ getFoundItem(claimedMatch)?.model || getFoundItem(claimedMatch)?.brand || 'Your Item' }}</h6>
+              <p class="text-muted small mb-0">{{ getFoundItem(claimedMatch)?.category }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collection Instructions -->
+        <div class="alert alert-info mb-0">
+          <div class="d-flex align-items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-geo-alt-fill flex-shrink-0 mt-1" viewBox="0 0 16 16">
+              <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+            </svg>
+            <div class="flex-grow-1">
+              <h6 class="alert-heading mb-2">Collection Point</h6>
+              <div v-if="getSecurityOffice(claimedMatch)">
+                <p class="mb-1"><strong>{{ getSecurityOffice(claimedMatch).name }}</strong></p>
+                <p class="text-muted small mb-2">{{ getSecurityOffice(claimedMatch).location }}</p>
+                <p class="mb-0 small">Please bring your student/staff ID for verification.</p>
+              </div>
+              <div v-else>
+                <p class="mb-0 small text-muted">Security office location information not available. Please contact the finder for collection details.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <button type="button" class="btn btn-primary" @click="closeCollectionModal">
+          Got it, thanks!
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <style scoped>
 .ratio img {
   object-fit: cover;
+}
+
+/* Collection Modal Success Icon Animation */
+.success-icon-wrapper {
+  display: inline-block;
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.collection-modal-content .alert-light {
+  background-color: #f8f9fa;
+}
+
+/* Dark mode support for collection modal */
+html.dark .collection-modal-content .alert-light,
+.dark .collection-modal-content .alert-light {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
 }
 
 /* Dark mode support for verification form */

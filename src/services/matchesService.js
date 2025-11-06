@@ -144,17 +144,23 @@ export async function updateMatchStatus(matchId, status) {
 
     // If confirming the match, also update the lost and found items to 'claimed'
     if (status === 'confirmed' && match.lost_item_id && match.found_item_id) {
+      console.log('Updating lost item status to claimed:', match.lost_item_id)
+
       // Update lost item status to 'claimed'
-      await httpClient.patch(
+      const lostItemResponse = await httpClient.patch(
         `/rest/v1/lost_items?id=eq.${match.lost_item_id}`,
         { status: 'claimed' }
       )
+      console.log('Lost item update response:', lostItemResponse.data)
+
+      console.log('Updating found item status to claimed:', match.found_item_id)
 
       // Update found item status to 'claimed'
-      await httpClient.patch(
+      const foundItemResponse = await httpClient.patch(
         `/rest/v1/found_items?id=eq.${match.found_item_id}`,
         { status: 'claimed' }
       )
+      console.log('Found item update response:', foundItemResponse.data)
     }
 
     return match

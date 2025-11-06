@@ -85,17 +85,23 @@ const closeMatchesModal = () => {
   selectedLostItem.value = null
 }
 
-const handleMatchClaimed = async () => {
+const handleMatchClaimed = async (lostItemId) => {
+  console.log('Match claimed event received for item:', lostItemId)
+
+  // Immediately update the local item status to 'claimed'
+  const itemIndex = myLostItems.value.findIndex(item => item.id === lostItemId)
+  if (itemIndex !== -1) {
+    myLostItems.value[itemIndex].status = 'claimed'
+    console.log('Updated item status to claimed in local state')
+  }
+
   // Close the modal
   closeMatchesModal()
-
-  // Refresh the lost items list to show updated status
-  await loadMyLostItems()
 
   // Show a success message
   pushToast({
     title: 'Item claimed!',
-    message: 'The dashboard has been updated to reflect your claimed item.',
+    message: 'Your item has been marked as claimed.',
     variant: 'success'
   })
 }
@@ -117,6 +123,7 @@ const loadMyLostItems = async () => {
     })
 
     myLostItems.value = Array.isArray(response.data) ? response.data : []
+    console.log('Loaded items with status:', myLostItems.value.map(i => ({ id: i.id, model: i.model, status: i.status })))
 
     // Fetch match counts for all items to determine correct badge display
     for (const item of myLostItems.value) {
@@ -551,19 +558,9 @@ html.dark .image-placeholder,
   grid-row: 2;
 }
 
-/* Claimed item blur effect */
+/* Claimed item styling - no blur, just visual indicator */
 .item-claimed {
-  opacity: 0.7;
-}
-
-.item-claimed .card-body {
-  filter: blur(1.5px);
-  pointer-events: none;
-}
-
-.item-claimed button {
-  filter: none;
-  pointer-events: all;
+  opacity: 0.85;
 }
 
 /* Claimed overlay badge on images */
@@ -576,8 +573,8 @@ html.dark .image-placeholder,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(3px);
   border-radius: 8px;
   z-index: 10;
 }
@@ -585,20 +582,33 @@ html.dark .image-placeholder,
 .claimed-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background: #10b981;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.75px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  animation: pulse-claimed 2s infinite;
 }
 
 .claimed-badge svg {
   flex-shrink: 0;
+}
+
+@keyframes pulse-claimed {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.7), 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
 }
 
 /* Dark mode card backgrounds (except billboards and purple section) */
