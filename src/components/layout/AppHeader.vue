@@ -5,6 +5,7 @@ import { useAuth } from '../../composables/useAuth'
 import { pushToast } from '../../composables/useToast'
 import { useTheme } from '../../composables/useTheme'
 import smuLogo from '@/assets/smu-logo.png'
+import smuLogo_white from '@/assets/smu-logo (white).png'
 
 const { isAuthenticated: authStatus, user, logout } = useAuth()
 const router = useRouter()
@@ -101,11 +102,14 @@ const { isDark, toggleTheme } = useTheme()
       <div class="app-header__brand">
         <RouterLink class="app-header__logo" to="/" aria-label="Go to home">
           <img
-            :src="smuLogo"
-            alt="SMU Logo"
+            :src="isDark ? smuLogo_white : smuLogo"
+            :alt="isDark ? 'SMU Logo (white)' : 'SMU Logo'"
             class="app-header__logo-img"
           />
-          <span class="app-header__logo-text">Lost &amp; Found Portal</span>
+
+          <span class="app-header__logo-text" :style="{ color: isDark ? '#ffffff' : '#0f172a' }"> 
+            Lost &amp; Found Portal
+          </span>
         </RouterLink>
       </div>
 
