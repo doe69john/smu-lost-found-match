@@ -182,7 +182,7 @@ onMounted(() => {
     </header>
 
     <!-- My Lost Items Section -->
-    <div v-if="myLostItems.length > 0" class="card border-0 shadow-sm" style="border-radius: 1rem; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
+    <div v-if="myLostItems.length > 0" class="card border-0 shadow-sm purple-gradient-card" style="border-radius: 1rem; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
       <div class="card-body text-white p-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <h2 class="h5 mb-0 fw-semibold">
@@ -214,7 +214,7 @@ onMounted(() => {
             <div class="card-body">
               <div class="d-flex gap-3">
                 <!-- Image Section -->
-                <div class="item-images flex-shrink-0">
+                <div class="item-images flex-shrink-0 position-relative">
                   <div v-if="getItemImages(item).length === 0" class="image-placeholder">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
@@ -226,6 +226,16 @@ onMounted(() => {
                   </div>
                   <div v-else class="multi-images">
                     <img v-for="(img, idx) in getItemImages(item)" :key="idx" :src="img" :alt="`${item.model || item.brand || 'Lost item'} ${idx + 1}`" />
+                  </div>
+
+                  <!-- Claimed Overlay Badge -->
+                  <div v-if="item.status === 'claimed'" class="claimed-overlay">
+                    <span class="claimed-badge">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                      </svg>
+                      Claimed
+                    </span>
                   </div>
                 </div>
 
@@ -298,7 +308,7 @@ onMounted(() => {
       <!-- Lost reports billboard -->
   <div class="col-12 col-lg-6">
     <div
-      class="card border-0 shadow-sm overflow-hidden text-white h-100"
+      class="card billboard-card border-0 shadow-sm overflow-hidden text-white h-100"
       style="border-radius: 1rem; background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);"
     >
       <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
@@ -327,7 +337,7 @@ onMounted(() => {
       <!-- Found submissions billboard -->
   <div class="col-12 col-lg-6">
     <div
-      class="card border-0 shadow-sm overflow-hidden text-white h-100"
+      class="card billboard-card border-0 shadow-sm overflow-hidden text-white h-100"
       style="border-radius: 1rem; background: linear-gradient(135deg,#059669 0%, #10b981 50%, #22c55e 100%);"
     >
       <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
@@ -555,6 +565,11 @@ html.dark .quick-description,
   background: #f3f4f6;
 }
 
+html.dark .item-images,
+.dark .item-images {
+  background: #374151;
+}
+
 .image-placeholder {
   width: 100%;
   height: 100%;
@@ -562,6 +577,12 @@ html.dark .quick-description,
   align-items: center;
   justify-content: center;
   color: #9ca3af;
+}
+
+html.dark .image-placeholder,
+.dark .image-placeholder {
+  color: #6b7280;
+  background: #374151;
 }
 
 .single-image img {
@@ -613,6 +634,82 @@ html.dark .quick-description,
 .item-claimed button {
   filter: none;
   pointer-events: all;
+}
+
+/* Claimed overlay badge on images */
+.claimed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.claimed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #10b981;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.claimed-badge svg {
+  flex-shrink: 0;
+}
+
+/* Dark mode card backgrounds (except billboards and purple section) */
+html.dark .card:not(.billboard-card):not(.purple-gradient-card),
+.dark .card:not(.billboard-card):not(.purple-gradient-card) {
+  background: rgba(31, 41, 55, 0.95) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Keep purple gradient in dark mode for My Lost Items section */
+html.dark .purple-gradient-card,
+.dark .purple-gradient-card {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+}
+
+html.dark .card:not(.billboard-card) .text-dark,
+.dark .card:not(.billboard-card) .text-dark {
+  color: #e5e7eb !important;
+}
+
+/* View All button dark mode */
+html.dark .btn-light,
+.dark .btn-light {
+  background-color: rgba(55, 65, 81, 0.8);
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+html.dark .btn-light:hover,
+.dark .btn-light:hover {
+  background-color: rgba(75, 85, 99, 0.9);
+  border-color: #6b7280;
+  color: #f3f4f6;
+}
+
+/* Make category badges more visible in dark mode */
+html.dark .badge.bg-primary-subtle,
+.dark .badge.bg-primary-subtle {
+  background-color: rgba(99, 102, 241, 0.3) !important;
+  color: #c7d2fe !important;
+  font-weight: 600;
 }
 
 /* Responsive adjustments */

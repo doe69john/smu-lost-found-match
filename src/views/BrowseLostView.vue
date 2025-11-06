@@ -355,6 +355,11 @@ watch(
   flex-shrink: 0;
 }
 
+html.dark .item-images,
+.dark .item-images {
+  background: #374151;
+}
+
 .image-placeholder {
   width: 100%;
   height: 100%;
@@ -363,6 +368,12 @@ watch(
   justify-content: center;
   color: #9ca3af;
   background: #f3f4f6;
+}
+
+html.dark .image-placeholder,
+.dark .image-placeholder {
+  color: #6b7280;
+  background: #374151;
 }
 
 .single-image {
@@ -394,6 +405,20 @@ watch(
 .multi-images img:first-child {
   grid-column: 1 / -1;
   grid-row: 1;
+}
+
+/* Dark mode card footer */
+html.dark .card-footer.bg-white,
+.dark .card-footer.bg-white {
+  background-color: #1f2937 !important;
+}
+
+/* Make category badges more visible in dark mode */
+html.dark .badge.text-bg-primary-subtle,
+.dark .badge.text-bg-primary-subtle {
+  background-color: rgba(99, 102, 241, 0.3) !important;
+  color: #c7d2fe !important;
+  font-weight: 600;
 }
 
 /* Responsive adjustments */

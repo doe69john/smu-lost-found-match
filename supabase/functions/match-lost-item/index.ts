@@ -50,6 +50,7 @@ interface LostItem {
 
 interface FoundItem {
   id: string
+  user_id: string
   category: string
   brand?: string
   model?: string
@@ -407,10 +408,12 @@ serve(async (req) => {
     }
 
     // Fetch all found items with images and location/date (any status except 'claimed')
+    // Exclude found items from the same user to prevent self-matching
     const { data: foundItems, error: foundError } = await supabase
       .from('found_items')
-      .select('id,category,brand,model,color,description,date_found,location_found,image_metadata,status')
+      .select('id,user_id,category,brand,model,color,description,date_found,location_found,image_metadata,status')
       .neq('status', 'claimed')
+      .neq('user_id', lostItemTyped.user_id)
       .not('image_metadata', 'eq', '[]')
 
     if (foundError) {

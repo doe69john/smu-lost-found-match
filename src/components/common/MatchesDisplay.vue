@@ -468,4 +468,53 @@ defineExpose({
 .ratio img {
   object-fit: cover;
 }
+
+/* Dark mode support for verification form */
+html.dark .form-control,
+.dark .form-control {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+html.dark .form-control:focus,
+.dark .form-control:focus {
+  background-color: #374151;
+  border-color: #6366f1;
+  color: #e5e7eb;
+}
+
+html.dark .form-control::placeholder,
+.dark .form-control::placeholder {
+  color: #9ca3af;
+}
+
+html.dark .form-label,
+.dark .form-label {
+  color: #d1d5db;
+}
+
+html.dark .alert-info,
+.dark .alert-info {
+  background-color: #1e3a5f;
+  border-color: #2563eb;
+  color: #bfdbfe;
+}
+
+html.dark .alert-success,
+.dark .alert-success {
+  background-color: #14532d;
+  border-color: #16a34a;
+  color: #bbf7d0;
+}
+
+html.dark .invalid-feedback,
+.dark .invalid-feedback {
+  color: #fca5a5;
+}
+
+html.dark .form-control.is-invalid,
+.dark .form-control.is-invalid {
+  border-color: #ef4444;
+}
 </style>
