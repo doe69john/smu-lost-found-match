@@ -12,7 +12,7 @@ const route = useRoute()
 const navigation = [
   { name: 'Dashboard', path: '/dashboard' },
   { name: 'Browse Lost', path: '/browse-lost' },
-  { name: 'Browse Found', path: '/browse-found' },
+  { name: 'My Found Items', path: '/browse-found' },
   { name: 'I Lost My Item', path: '/report-lost', cta: true },
   { name: 'I Found an Item', path: '/report-found', cta: true }
 ]

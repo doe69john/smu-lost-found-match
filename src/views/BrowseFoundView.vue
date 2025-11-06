@@ -4,6 +4,9 @@ import PulseLoader from '@/components/common/PulseLoader.vue'
 import { useLoadingDelay } from '@/composables/useLoadingDelay'
 import { fetchFoundItems } from '../services/foundItemsService'
 import { pushToast } from '../composables/useToast'
+import { useAuth } from '../composables/useAuth'
+
+const { user } = useAuth()
 
 const categories = [
   { label: 'All categories', value: 'all' },
@@ -44,6 +47,12 @@ const formatDate = (value) => {
 
 const buildFilterParams = () => {
   const params = {}
+
+  // Filter by current user - only show items they found
+  if (user.value?.id) {
+    params.user_id = `eq.${user.value.id}`
+  }
+
   if (filters.category !== 'all') {
     params.category = `eq.${filters.category}`
   }
@@ -134,9 +143,9 @@ watch(
 <template>
   <section class="d-grid gap-4">
     <header>
-      <h1 class="h3 fw-semibold mb-1">Browse found items</h1>
+      <h1 class="h3 fw-semibold mb-1">My Found Items</h1>
       <p class="text-muted mb-0">
-        Review items that have been handed in so you can connect them with potential owners.
+        View and manage the items you have found and reported.
       </p>
     </header>
 
@@ -176,7 +185,7 @@ watch(
       </p>
 
       <div v-if="items.length === 0" class="text-center py-5 text-muted">
-        No found items match your filters yet. Try a different search or check back soon.
+        You haven't reported any found items yet. When you find something, report it here to help match it with the owner.
       </div>
 
       <div v-else class="row g-3">
