@@ -100,11 +100,10 @@ const goToMode = (targetMode) => {
   if (targetMode === mode.value) return
   resetFeedback()
 
-  const sanitizedQuery = withoutSignupSuccessFlag(route.query)
   const target = targetMode === modes.signup ? { name: 'auth-signup' } : { name: 'auth' }
 
-  if (sanitizedQuery) {
-    target.query = sanitizedQuery
+  if (route.query && Object.keys(route.query).length) {
+    target.query = { ...route.query }
   }
 
   router.replace(target)
@@ -144,10 +143,7 @@ const handleSubmit = async () => {
       })
 
       if (!response?.session) {
-        const query = route.query && Object.keys(route.query).length ? { ...route.query } : {}
-        query[SIGNUP_SUCCESS_FLAG] = '1'
-
-        router.replace({ name: 'auth', query })
+        successMessage.value = 'Registration successful! Please verify your email before signing in.'
         return
       }
 
@@ -182,21 +178,6 @@ const handleSubmit = async () => {
   }
 }
 
-watch(
-  () => route.query?.[SIGNUP_SUCCESS_FLAG],
-  (flag) => {
-    if (!flag) return
-
-    successMessage.value = SIGNUP_SUCCESS_MESSAGE
-    mode.value = modes.signin
-
-    const sanitizedQuery = withoutSignupSuccessFlag(route.query)
-    const target = sanitizedQuery ? { name: 'auth', query: sanitizedQuery } : { name: 'auth' }
-
-    router.replace(target)
-  },
-  { immediate: true }
-)
 </script>
 
 <template>
