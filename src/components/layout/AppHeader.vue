@@ -4,6 +4,7 @@ import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 import { pushToast } from '../../composables/useToast'
 import { useTheme } from '../../composables/useTheme'
+import smuLogo from '@/assets/smu-logo.png'
 
 const { isAuthenticated: authStatus, user, logout } = useAuth()
 const router = useRouter()
@@ -91,22 +92,25 @@ watch(
   }
 )
 
-// Theme toggle
 const { isDark, toggleTheme } = useTheme()
 </script>
 
 <template>
   <header class="app-header">
-    <!-- Row 1 (always shown). On mobile this is the ONLY row -->
     <div class="app-header__bar app-header__bar--top">
       <div class="app-header__brand">
         <RouterLink class="app-header__logo" to="/" aria-label="Go to home">
-          Lost &amp; Found Portal
+          <img
+            :src="smuLogo"
+            alt="SMU Logo"
+            class="app-header__logo-img"
+          />
+          <span class="app-header__logo-text">Lost &amp; Found Portal</span>
         </RouterLink>
       </div>
 
+
       <div v-if="!isAuthRoute" class="app-header__right">
-        <!-- Auth (desktop only) -->
         <div class="app-header__auth only-desktop">
           <template v-if="isLoggedIn">
             <div class="app-header__identity">
@@ -130,7 +134,6 @@ const { isDark, toggleTheme } = useTheme()
           </template>
         </div>
 
-        <!-- Single hamburger (mobile only) -->
         <button
           class="app-header__toggle transition-base only-mobile"
           type="button"
@@ -144,9 +147,7 @@ const { isDark, toggleTheme } = useTheme()
       </div>
     </div>
 
-    <!-- Row 2 (desktop only) -->
     <div v-if="!isAuthRoute" class="app-header__bar app-header__bar--bottom only-desktop">
-      <!-- Tabs (desktop only) -->
       <nav v-if="isLoggedIn" class="app-header__nav" aria-label="Sections">
         <div class="app-header__links">
           <RouterLink
@@ -162,7 +163,6 @@ const { isDark, toggleTheme } = useTheme()
         </div>
       </nav>
 
-      <!-- CTAs (desktop only) -->
       <div class="app-header__cta-group" aria-label="Quick actions">
         <RouterLink
           v-for="(link, index) in ctaLinks"
@@ -175,7 +175,6 @@ const { isDark, toggleTheme } = useTheme()
         </RouterLink>
       </div>
 
-      <!-- Theme + auth area (desktop only) -->
       <div class="app-header__auth">
         <button
           type="button"
@@ -207,11 +206,9 @@ const { isDark, toggleTheme } = useTheme()
           </button>
         </div>
       </div>
-<!-- (No “Signed in as” or Sign out here — both handled in Row 1) -->
-
     </div>
 
-    <!-- Overlay -->
+
     <Transition name="drawer-fade">
       <div
         v-if="!isAuthRoute && isMenuOpen"
@@ -221,7 +218,6 @@ const { isDark, toggleTheme } = useTheme()
       ></div>
     </Transition>
 
-    <!-- Drawer (mobile) -->
     <Transition name="drawer-slide">
       <nav
         v-if="!isAuthRoute && isMenuOpen"
@@ -249,7 +245,6 @@ const { isDark, toggleTheme } = useTheme()
           </RouterLink>
         </div>
 
-        <!-- CTAs on mobile -->
         <div class="app-header__drawer-cta">
           <RouterLink
             v-for="(link, index) in ctaLinks"
@@ -284,6 +279,8 @@ const { isDark, toggleTheme } = useTheme()
 
 
 <style>
+
+.app-header__bar--top,
 .app-header__bar--bottom {
   display: flex;
   align-items: center;
@@ -291,33 +288,83 @@ const { isDark, toggleTheme } = useTheme()
   padding: 0.75rem 2rem;
 }
 
-.app-header__nav {
-  flex: 1; 
+.app-header__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
 }
+
+.app-header__auth {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-header__identity {
+  color: #475569;
+  padding-right: 1rem;
+  margin-right: 1rem;
+  border-right: 1px solid rgba(0,0,0,0.1);
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(0,0,0,0.08);
+  padding-right: 1.5rem;
+  margin-right: 1.5rem;
+}
+
+.app-header__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: inherit;
+}
+
+.app-header__logo:hover {
+  color: #4f46e5;
+}
+
+.app-header__logo-img {
+  height: 46px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+}
+
+.app-header__logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.app-header__nav { flex: 1; }
 
 .app-header__links {
   display: flex;
-  justify-content: space-evenly; 
+  justify-content: space-evenly;
   gap: 1rem;
   width: 100%;
 }
 
-
 .app-header__link {
-  flex: 1; 
+  flex: 1;
   text-align: center;
   font-weight: 500;
   padding: 0.5rem 0;
-  transition: color 0.3s, border-color 0.3s;
+  transition: color 0.2s, border-color 0.2s;
   border-bottom: 2px solid transparent;
 }
 
-.app-header__link:hover {
-  color: #4f46e5; 
-}
-
+.app-header__link:hover { color: #4f46e5; }
 .app-header__link.is-active {
-  border-color: #6366f1; 
+  border-color: #6366f1;
   color: #4338ca;
 }
 
@@ -327,30 +374,63 @@ const { isDark, toggleTheme } = useTheme()
   margin-left: 2rem;
 }
 
-/* Hide mobile-only elements on larger screens */
-@media (min-width: 1025px) {
-  .only-mobile {
-    display: none !important;
-  }
-}
-
-/* Hide desktop-only elements on tablets and mobile */
-@media (max-width: 1024px) {
-  .only-desktop {
-    display: none !important;
-  }
-}
-
 .signout-button {
-  background-color: #ef4444 !important; /* Red */
+  background-color: #ef4444 !important;
   color: #fff !important;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  margin-left: 0.25rem; 
 }
 
 .signout-button:hover {
-  background-color: #dc2626 !important; /* Darker red */
+  background-color: #dc2626 !important;
+  box-shadow: 0 6px 14px rgba(239,68,68,0.25);
 }
 
+.only-mobile {
+  display: inline-flex;         
+  align-items: center;
+}
+
+.app-header__toggle {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;             
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+.app-header__toggle span,
+.app-header__toggle span::before,
+.app-header__toggle span::after {
+  content: "";
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  position: relative;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.app-header__toggle span::before { position: absolute; top: -7px; }
+.app-header__toggle span::after  { position: absolute; top:  7px; }
+
+@media (min-width: 1025px) {
+  .only-mobile { display: none !important; }
+}
+
+@media (max-width: 1024px) {
+  .only-desktop { display: none !important; }
+  .app-header__brand { 
+    border-right: 0;
+    padding-right: 0.75rem;
+    margin-right: 0.75rem;
+  }
+}
 
 
 </style>
