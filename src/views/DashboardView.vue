@@ -85,17 +85,23 @@ const closeMatchesModal = () => {
   selectedLostItem.value = null
 }
 
-const handleMatchClaimed = async () => {
+const handleMatchClaimed = async (lostItemId) => {
+  console.log('Match claimed event received for item:', lostItemId)
+
+  // Immediately update the local item status to 'claimed'
+  const itemIndex = myLostItems.value.findIndex(item => item.id === lostItemId)
+  if (itemIndex !== -1) {
+    myLostItems.value[itemIndex].status = 'claimed'
+    console.log('Updated item status to claimed in local state')
+  }
+
   // Close the modal
   closeMatchesModal()
-
-  // Refresh the lost items list to show updated status
-  await loadMyLostItems()
 
   // Show a success message
   pushToast({
     title: 'Item claimed!',
-    message: 'The dashboard has been updated to reflect your claimed item.',
+    message: 'Your item has been marked as claimed.',
     variant: 'success'
   })
 }
@@ -117,6 +123,7 @@ const loadMyLostItems = async () => {
     })
 
     myLostItems.value = Array.isArray(response.data) ? response.data : []
+    console.log('Loaded items with status:', myLostItems.value.map(i => ({ id: i.id, model: i.model, status: i.status })))
 
     // Fetch match counts for all items to determine correct badge display
     for (const item of myLostItems.value) {

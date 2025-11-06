@@ -152,6 +152,8 @@ const closeCollectionModal = () => {
   const lostItemId = props.lostItemId
   claimedMatch.value = null
 
+  console.log('Collection modal closed, emitting matchClaimed event for:', lostItemId)
+
   // Emit event to parent to refresh dashboard after modal closes
   emit('matchClaimed', lostItemId)
 }
