@@ -65,6 +65,57 @@ function extractSession(payload) {
   return payload
 }
 
+function normalizeSessionInput(session) {
+  if (!session) return null
+
+  const normalized = {
+    ...session,
+    access_token: session.access_token || session.accessToken,
+    refresh_token: session.refresh_token || session.refreshToken,
+    token_type: session.token_type || session.tokenType || 'bearer',
+    expires_in:
+      typeof session.expires_in !== 'undefined'
+        ? session.expires_in
+        : session.expiresIn,
+    expires_at:
+      typeof session.expires_at !== 'undefined'
+        ? session.expires_at
+        : session.expiresAt
+  }
+
+  if (
+    typeof normalized.expires_in === 'string' &&
+    normalized.expires_in.trim() !== '' &&
+    !Number.isNaN(Number(normalized.expires_in))
+  ) {
+    normalized.expires_in = Number(normalized.expires_in)
+  }
+
+  if (
+    typeof normalized.expires_at === 'string' &&
+    normalized.expires_at.trim() !== '' &&
+    !Number.isNaN(Number(normalized.expires_at))
+  ) {
+    normalized.expires_at = Number(normalized.expires_at)
+  }
+
+  return normalized
+}
+
+export function persistSupabaseSession(session) {
+  const normalized = normalizeSessionInput(session)
+  if (!normalized?.access_token) {
+    return null
+  }
+
+  const payload = {
+    ...normalized,
+    expires_at: normalized.expires_at || computeExpiration(normalized)
+  }
+
+  return persistSession(payload)
+}
+
 export async function signIn({ email, password }) {
   try {
     const { data } = await httpClient.post(
@@ -77,8 +128,7 @@ export async function signIn({ email, password }) {
 
     const session = extractSession(data)
     if (session?.access_token) {
-      const persisted = persistSession({ ...session, expires_at: computeExpiration(session) })
-      return persisted
+      return persistSupabaseSession(session)
     }
 
     return session
@@ -102,8 +152,7 @@ export async function signUp({ email, password, data = {} }) {
 
     const session = extractSession(response.data)
     if (session?.access_token) {
-      const persisted = persistSession({ ...session, expires_at: computeExpiration(session) })
-      return persisted
+      return persistSupabaseSession(session)
     }
 
     return response.data
@@ -149,11 +198,103 @@ export function getCurrentSession() {
 export function loadSessionFromStorage() {
   const session = getSessionFromStorage()
   if (session?.access_token) {
-    persistSession({ ...session, expires_at: computeExpiration(session) })
+    persistSupabaseSession(session)
   }
   return session
 }
 
 export function clearPersistedSession() {
   clearSession()
+}
+
+export async function requestPasswordReset({ email, redirectTo }) {
+  try {
+    await httpClient.post(`${AUTH_BASE_PATH}/recover`, {
+      email,
+      ...(redirectTo ? { redirect_to: redirectTo } : {})
+    })
+  } catch (error) {
+    throw new Error(
+      normalizeSupabaseError(
+        error,
+        'Unable to start the password reset process. Please try again.'
+      )
+    )
+  }
+}
+
+export async function verifyRecoveryToken({ token, tokenHash, email } = {}) {
+  try {
+    const payload = { type: 'recovery' }
+
+    if (token) {
+      payload.token = token
+    }
+
+    if (tokenHash) {
+      payload.token_hash = tokenHash
+    }
+
+    if (!payload.token && !payload.token_hash) {
+      throw new Error('A recovery token is required to verify this link.')
+    }
+
+    if (email) {
+      payload.email = email
+    }
+
+    const { data } = await httpClient.post(`${AUTH_BASE_PATH}/verify`, payload)
+
+    const session = extractSession(data)
+    if (session?.access_token) {
+      const persisted = persistSupabaseSession(session)
+      return { ...data, session: persisted }
+    }
+
+    if (data?.access_token && data?.refresh_token) {
+      const persisted = persistSupabaseSession(data)
+      if (persisted?.access_token) {
+        return { ...data, session: persisted }
+      }
+    }
+
+    throw new Error('Unable to verify the recovery session from this link.')
+  } catch (error) {
+    throw new Error(
+      normalizeSupabaseError(
+        error,
+        'This reset link is invalid or has expired. Please request a new one.'
+      )
+    )
+  }
+}
+
+export async function updateUserPassword({ password, accessToken } = {}) {
+  try {
+    const config = {}
+    if (accessToken) {
+      config.headers = { Authorization: `Bearer ${accessToken}` }
+    }
+
+    const { data } = await httpClient.put(
+      `${AUTH_BASE_PATH}/user`,
+      { password },
+      config
+    )
+
+    const session = extractSession(data)
+    if (session?.access_token) {
+      const persisted = persistSupabaseSession(session)
+      return { ...data, session: persisted }
+    }
+
+    return data
+  } catch (error) {
+    throw new Error(
+      normalizeSupabaseError(
+        error,
+        'Unable to update the password. The reset link may have expired.'
+      )
+    )
+  }
 }
