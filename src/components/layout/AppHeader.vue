@@ -450,14 +450,13 @@ const { isDark, toggleTheme } = useTheme()
 @media (max-width: 480px) {
   .app-header__bar--top { padding: 0.5rem 0.75rem; }
   .app-header__brand { border-right: 0; padding-right: 0.5rem; margin-right: 0.5rem; }
-  .app-header__logo-img { height: 36px; }       /* slightly smaller logo */
+  .app-header__logo-img { height: 36px; }     
   .app-header__logo-text { 
     max-width: 50vw; 
     font-size: 1rem; 
   }
 }
 
-/* Optional: ultra-small — hide the text entirely to guarantee space */
 @media (max-width: 360px) {
   .app-header__logo-text { display: none; }
 }
