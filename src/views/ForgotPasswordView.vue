@@ -31,17 +31,41 @@ const schema = z.object({
   email: smuEmailSchema
 })
 
+const resolveAppBaseUrl = () => {
+  const envUrl = import.meta?.env?.VITE_SITE_URL
+
+  if (envUrl) {
+    try {
+      const url = new URL(envUrl)
+      url.hash = ''
+      return url.toString()
+    } catch (error) {
+      console.warn('Invalid VITE_SITE_URL provided. Falling back to window.location.', error)
+    }
+  }
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin
+  }
+
+  throw new Error('Password reset links cannot be generated in this environment.')
+}
+
 const buildRedirectUrl = () => {
-  if (typeof window === 'undefined') {
-    throw new Error('Password reset links cannot be generated in this environment.')
-  }
+  const baseUrl = resolveAppBaseUrl()
+  const base = new URL(baseUrl)
 
-  const url = new URL('/auth/reset-password', window.location.origin)
+  base.search = ''
+  base.hash = ''
+
+  const basePath = base.pathname === '/' ? '' : base.pathname.replace(/\/$/, '')
+  base.pathname = `${basePath}/auth/reset-password`
+
   if (redirectParam.value) {
-    url.searchParams.set('redirect', redirectParam.value)
+    base.searchParams.set('redirect', redirectParam.value)
   }
 
-  return url.toString()
+  return base.toString()
 }
 
 const handleSubmit = async () => {
