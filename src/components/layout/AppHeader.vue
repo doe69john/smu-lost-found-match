@@ -323,7 +323,7 @@ const { isDark, toggleTheme } = useTheme()
   text-decoration: none;
   font-weight: 600;
   font-size: 1.15rem;
-  color: inherit;
+  color:var(--color-secondary);
 }
 
 .app-header__logo:hover {
@@ -340,7 +340,7 @@ const { isDark, toggleTheme } = useTheme()
 .app-header__logo-text {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #0f172a;
+  color: inherit;
   white-space: nowrap;
 }
 

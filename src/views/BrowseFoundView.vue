@@ -249,18 +249,10 @@ watch(
                     {{ item.category || 'Item' }}
                   </span>
                   <h2 class="h5 mb-0">{{ item.model || item.brand || 'Found item' }}</h2>
-                  <p class="text-muted mb-0 flex-grow-1">
-                    <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
+                  <p v-if="item.brand" class="text-muted mb-0 flex-grow-1">
+                    <span class="fw-medium">{{ item.brand }}</span>
                   </p>
                 </div>
-              </div>
-            </div>
-            <div class="card-footer bg-white border-0">
-              <div class="small text-muted">
-                <strong>Location found:</strong> {{ item.location_found || 'Unknown location' }}
-              </div>
-              <div class="small text-muted">
-                <strong>Date found:</strong> {{ formatDate(item.date_found) }}
               </div>
             </div>
           </article>
