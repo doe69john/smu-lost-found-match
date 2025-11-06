@@ -2,6 +2,45 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { isUserAuthenticated } from '../composables/useAuth'
 import { pushToast } from '../composables/useToast'
 
+function parseHashParams(hash) {
+  if (!hash) return new URLSearchParams()
+
+  const normalized = hash.startsWith('#') ? hash.slice(1) : hash
+  return new URLSearchParams(normalized)
+}
+
+function shouldRedirectToRecovery(route) {
+  const query = route.query || {}
+  const hashParams = parseHashParams(route.hash)
+
+  const queryType = typeof query.type === 'string' ? query.type : null
+  const hashType = hashParams.get('type')
+
+  if (queryType !== 'recovery' && hashType !== 'recovery') {
+    return false
+  }
+
+  const queryHasToken = ['token', 'access_token', 'refresh_token'].some((key) => {
+    const value = query[key]
+    return typeof value === 'string' && value
+  })
+
+  const hashHasToken = ['token', 'access_token', 'refresh_token'].some((key) => {
+    const value = hashParams.get(key)
+    return typeof value === 'string' && value
+  })
+
+  return queryHasToken || hashHasToken
+}
+
+function createRecoveryRedirect(route) {
+  return {
+    name: 'auth-reset-password',
+    query: { ...route.query },
+    hash: route.hash
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -16,6 +55,18 @@ const router = createRouter({
       name: 'auth-signup',
       component: () => import('../views/AuthView.vue'),
       meta: { guestOnly: true, layout: 'auth', authMode: 'signup' }
+    },
+    {
+      path: '/auth/forgot-password',
+      name: 'auth-forgot-password',
+      component: () => import('../views/ForgotPasswordView.vue'),
+      meta: { guestOnly: true, layout: 'auth' }
+    },
+    {
+      path: '/auth/reset-password',
+      name: 'auth-reset-password',
+      component: () => import('../views/ResetPasswordView.vue'),
+      meta: { layout: 'auth' }
     },
     {
       path: '/dashboard',
@@ -49,7 +100,13 @@ const router = createRouter({
     },
     {
       path: '/',
-      redirect: '/dashboard'
+      redirect: (to) => {
+        if (shouldRedirectToRecovery(to)) {
+          return createRecoveryRedirect(to)
+        }
+
+        return { name: 'dashboard' }
+      }
     },
     {
       path: '/:pathMatch(.*)*',
@@ -64,6 +121,11 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
+  if (to.name !== 'auth-reset-password' && shouldRedirectToRecovery(to)) {
+    next(createRecoveryRedirect(to))
+    return
+  }
+
   if (to.meta.requiresAuth && !isUserAuthenticated()) {
     if (to.name !== 'auth') {
       pushToast({

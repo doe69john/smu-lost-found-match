@@ -34,7 +34,7 @@ const displayName = computed(
 const primaryLinks = computed(() => navigation.filter((link) => !CTA_PATHS.includes(link.path)))
 const ctaLinks = computed(() => navigation.filter((link) => CTA_PATHS.includes(link.path)))
 
-const isAuthRoute = computed(() => ['auth', 'auth-signup'].includes(route.name))
+const isAuthRoute = computed(() => route.meta?.layout === 'auth')
 
 const isMenuOpen = ref(false)
 

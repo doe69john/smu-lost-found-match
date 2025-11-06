@@ -5,7 +5,8 @@ import {
   signOut as signOutService,
   getCurrentUser,
   loadSessionFromStorage,
-  clearPersistedSession
+  clearPersistedSession,
+  persistSupabaseSession
 } from '../services/authService'
 import {
   emitSessionExpired,
@@ -198,6 +199,35 @@ export function useAuth() {
     return state.user
   }
 
+  const adoptSession = async (session) => {
+    if (!session?.access_token && !session?.accessToken) {
+      throw new Error('Invalid session payload')
+    }
+
+    const persisted = persistSupabaseSession(session)
+    if (!persisted?.access_token) {
+      throw new Error('Unable to persist Supabase session')
+    }
+
+    state.session = persisted
+    state.isAuthenticated = true
+    state.user = persisted.user || null
+    resetSessionInvalidationThrottle()
+    scheduleSessionExpiry(persisted)
+
+    if (!state.user) {
+      try {
+        state.user = await getCurrentUser()
+      } catch (error) {
+        console.warn('Unable to hydrate user after adopting session', error)
+        emitSessionExpired({ reason: 'expired' })
+        state.user = null
+      }
+    }
+
+    return state.user
+  }
+
   return {
     isAuthenticated: computed(() => state.isAuthenticated),
     user: computed(() => state.user),
@@ -206,7 +236,8 @@ export function useAuth() {
     login,
     register,
     logout,
-    refreshUser
+    refreshUser,
+    adoptSession
   }
 }
 
