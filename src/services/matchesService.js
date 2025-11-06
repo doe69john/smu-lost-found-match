@@ -129,9 +129,9 @@ export async function updateMatchStatus(matchId, status) {
   }
 
   try {
-    // First, update the match status
+    // First, update the match status and select all fields to get lost_item_id and found_item_id
     const matchResponse = await httpClient.patch(
-      `/rest/v1/matches?id=eq.${matchId}`,
+      `/rest/v1/matches?id=eq.${matchId}&select=*`,
       { status },
       {
         headers: {
