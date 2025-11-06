@@ -110,6 +110,16 @@ const goToMode = (targetMode) => {
   router.replace(target)
 }
 
+const goToForgotPassword = () => {
+  const redirect = route.query?.redirect
+  const query =
+    typeof redirect === 'string' && redirect
+      ? { redirect }
+      : undefined
+
+  router.push({ name: 'auth-forgot-password', ...(query ? { query } : {}) })
+}
+
 const resetFeedback = () => {
   errorMessage.value = ''
   successMessage.value = ''
@@ -279,6 +289,18 @@ const handleSubmit = async () => {
           Create one
         </UiButton>
       </template>
+    </p>
+
+    <p v-if="!isSignup" class="text-center text-muted small mb-0 mt-2">
+      Forgot your password?
+      <UiButton
+        type="button"
+        variant="link"
+        class="p-0 align-baseline"
+        @click="goToForgotPassword"
+      >
+        Reset it here
+      </UiButton>
     </p>
   </section>
 </template>
