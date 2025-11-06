@@ -312,12 +312,22 @@ const { isDark, toggleTheme } = useTheme()
   border-right: 1px solid rgba(0,0,0,0.1);
 }
 
-.app-header__brand {
-  display: flex;
-  align-items: center;
+.app-header__brand { 
+  display: flex; 
+  align-items: center; 
   border-right: 1px solid rgba(0,0,0,0.08);
-  padding-right: 1.5rem;
+  padding-right: 1.5rem; 
   margin-right: 1.5rem;
+  min-width: 0;          
+  flex: 1 1 auto;     
+}
+
+.app-header__right {
+  display: flex; 
+  align-items: center; 
+  gap: 0.75rem; 
+  margin-left: auto;
+  flex: 0 0 auto;      
 }
 
 .app-header__logo {
@@ -346,8 +356,10 @@ const { isDark, toggleTheme } = useTheme()
   font-weight: 700;
   color: inherit;
   white-space: nowrap;
+  overflow: hidden;      
+  text-overflow: ellipsis;
+  max-width: 60vw;        
 }
-
 .app-header__nav { flex: 1; }
 
 .app-header__links {
@@ -435,6 +447,19 @@ const { isDark, toggleTheme } = useTheme()
     margin-right: 0.75rem;
   }
 }
+@media (max-width: 480px) {
+  .app-header__bar--top { padding: 0.5rem 0.75rem; }
+  .app-header__brand { border-right: 0; padding-right: 0.5rem; margin-right: 0.5rem; }
+  .app-header__logo-img { height: 36px; }       /* slightly smaller logo */
+  .app-header__logo-text { 
+    max-width: 50vw; 
+    font-size: 1rem; 
+  }
+}
 
+/* Optional: ultra-small — hide the text entirely to guarantee space */
+@media (max-width: 360px) {
+  .app-header__logo-text { display: none; }
+}
 
 </style>
