@@ -16,6 +16,9 @@ const modes = {
   signup: 'signup'
 }
 
+const SIGNUP_SUCCESS_FLAG = 'signupSuccess'
+const SIGNUP_SUCCESS_MESSAGE = 'Registration successful! Please verify your email before signing in.'
+
 const mode = ref(route.meta?.authMode === 'signup' || route.name === 'auth-signup' ? modes.signup : modes.signin)
 
 watch(
@@ -33,6 +36,30 @@ const errorMessage = ref('')
 const successMessage = ref('')
 
 const isSignup = computed(() => mode.value === modes.signup)
+
+const withoutSignupSuccessFlag = (query) => {
+  if (!query || typeof query !== 'object') {
+    return undefined
+  }
+
+  const sanitizedQuery = { ...query }
+  delete sanitizedQuery[SIGNUP_SUCCESS_FLAG]
+
+  return Object.keys(sanitizedQuery).length ? sanitizedQuery : undefined
+}
+
+const clearSignupSuccessFlag = () => {
+  if (!route.query?.[SIGNUP_SUCCESS_FLAG]) {
+    return
+  }
+
+  const sanitizedQuery = withoutSignupSuccessFlag(route.query)
+  const navigationTarget = sanitizedQuery
+    ? { path: route.path, query: sanitizedQuery }
+    : { path: route.path }
+
+  router.replace(navigationTarget)
+}
 
 const primaryActionIcon = computed(() => (isSignup.value ? UserPlus : LogIn))
 
@@ -71,13 +98,22 @@ const redirectTarget = computed(() => {
 
 const goToMode = (targetMode) => {
   if (targetMode === mode.value) return
-  const query = route.query && Object.keys(route.query).length ? { ...route.query } : undefined
-  router.replace(targetMode === modes.signup ? { name: 'auth-signup', query } : { name: 'auth', query })
+  resetFeedback()
+
+  const sanitizedQuery = withoutSignupSuccessFlag(route.query)
+  const target = targetMode === modes.signup ? { name: 'auth-signup' } : { name: 'auth' }
+
+  if (sanitizedQuery) {
+    target.query = sanitizedQuery
+  }
+
+  router.replace(target)
 }
 
 const resetFeedback = () => {
   errorMessage.value = ''
   successMessage.value = ''
+  clearSignupSuccessFlag()
 }
 
 const handleSubmit = async () => {
@@ -108,9 +144,10 @@ const handleSubmit = async () => {
       })
 
       if (!response?.session) {
-        successMessage.value = 'Registration successful! Please verify your email before signing in.'
-        mode.value = modes.signin
-        router.replace({ name: 'auth', query: route.query })
+        const query = route.query && Object.keys(route.query).length ? { ...route.query } : {}
+        query[SIGNUP_SUCCESS_FLAG] = '1'
+
+        router.replace({ name: 'auth', query })
         return
       }
 
@@ -144,6 +181,22 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
+
+watch(
+  () => route.query?.[SIGNUP_SUCCESS_FLAG],
+  (flag) => {
+    if (!flag) return
+
+    successMessage.value = SIGNUP_SUCCESS_MESSAGE
+    mode.value = modes.signin
+
+    const sanitizedQuery = withoutSignupSuccessFlag(route.query)
+    const target = sanitizedQuery ? { name: 'auth', query: sanitizedQuery } : { name: 'auth' }
+
+    router.replace(target)
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -165,9 +218,6 @@ const handleSubmit = async () => {
     </header>
 
     <form class="d-grid gap-3" @submit.prevent="handleSubmit">
-      <div v-if="successMessage" class="alert alert-success" role="status">
-        {{ successMessage }}
-      </div>
       <div v-if="errorMessage" class="alert alert-danger" role="alert">
         {{ errorMessage }}
       </div>
@@ -213,6 +263,10 @@ const handleSubmit = async () => {
       >
         {{ primaryActionLabel }}
       </UiButton>
+
+      <div v-if="successMessage" class="alert alert-success mt-2 mb-0" role="status">
+        {{ successMessage }}
+      </div>
     </form>
 
     <p class="text-center text-muted small mb-0">
