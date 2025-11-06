@@ -71,8 +71,15 @@ const redirectTarget = computed(() => {
 
 const goToMode = (targetMode) => {
   if (targetMode === mode.value) return
-  const query = route.query && Object.keys(route.query).length ? { ...route.query } : undefined
-  router.replace(targetMode === modes.signup ? { name: 'auth-signup', query } : { name: 'auth', query })
+  resetFeedback()
+
+  const target = targetMode === modes.signup ? { name: 'auth-signup' } : { name: 'auth' }
+
+  if (route.query && Object.keys(route.query).length) {
+    target.query = { ...route.query }
+  }
+
+  router.replace(target)
 }
 
 const resetFeedback = () => {
@@ -109,8 +116,6 @@ const handleSubmit = async () => {
 
       if (!response?.session) {
         successMessage.value = 'Registration successful! Please verify your email before signing in.'
-        mode.value = modes.signin
-        router.replace({ name: 'auth', query: route.query })
         return
       }
 
@@ -144,6 +149,7 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
+
 </script>
 
 <template>
@@ -165,9 +171,6 @@ const handleSubmit = async () => {
     </header>
 
     <form class="d-grid gap-3" @submit.prevent="handleSubmit">
-      <div v-if="successMessage" class="alert alert-success" role="status">
-        {{ successMessage }}
-      </div>
       <div v-if="errorMessage" class="alert alert-danger" role="alert">
         {{ errorMessage }}
       </div>
@@ -213,6 +216,10 @@ const handleSubmit = async () => {
       >
         {{ primaryActionLabel }}
       </UiButton>
+
+      <div v-if="successMessage" class="alert alert-success mt-2 mb-0" role="status">
+        {{ successMessage }}
+      </div>
     </form>
 
     <p class="text-center text-muted small mb-0">
