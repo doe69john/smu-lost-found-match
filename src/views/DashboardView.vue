@@ -16,8 +16,6 @@ const { user } = useAuth()
 
 const lostCount = ref(0)
 const foundCount = ref(0)
-const recentLost = ref([])
-const recentFound = ref([])
 const myLostItems = ref([])
 const matchCounts = ref({})
 const isLoading = ref(false)
@@ -144,26 +142,15 @@ const loadDashboard = async () => {
   try {
     const [lostResponse, foundResponse] = await Promise.all([
       fetchLostItems({
-        select:
-          'id,category,brand,model,color,description,location_lost,date_lost',
-        order: 'date_lost.desc',
-        limit: 4,
         count: 'exact'
       }),
       fetchFoundItems({
-        select:
-          'id,category,brand,model,color,description,location_found,date_found',
-        order: 'date_found.desc',
-        limit: 4,
         count: 'exact'
       })
     ])
 
     lostCount.value = lostResponse.count || 0
     foundCount.value = foundResponse.count || 0
-
-    recentLost.value = Array.isArray(lostResponse.data) ? lostResponse.data : []
-    recentFound.value = Array.isArray(foundResponse.data) ? foundResponse.data : []
   } catch (error) {
     errorMessage.value = error?.message || 'Unable to load dashboard data.'
     pushToast({
@@ -329,142 +316,62 @@ onMounted(() => {
 
     <div class="row g-3">
       <!-- Lost reports billboard -->
-  <div class="col-12 col-lg-6">
-    <div
-      class="card billboard-card border-0 shadow-sm overflow-hidden text-white h-100"
-      style="border-radius: 1rem; background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);"
-    >
-      <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
-        <div>
-          <div class="text-white-50 text-uppercase small fw-semibold mb-1">Lost reports</div>
-          <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : lostCount }}</div>
-          <div class="small text-white-75">Filed by students and staff.</div>
-        </div>
+      <div class="col-12 col-lg-6">
         <div
-            class="d-none d-sm-flex align-items-center justify-content-center"
-            style="width:90px;height:90px;overflow:hidden;"
-            aria-hidden="true"
+          class="card billboard-card border-0 shadow-sm overflow-hidden text-white h-100"
+          style="border-radius: 1rem; background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);"
         >
-          <img
-            :src="lostIcon"
-            alt="LostIcon"
-            style="width:70%;height:auto;object-fit:contain;filter:brightness(0) invert(1);"
-          />
-
-</div>
-
+          <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
+            <div>
+              <div class="text-white-50 text-uppercase small fw-semibold mb-1">Lost reports</div>
+              <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : lostCount }}</div>
+              <div class="small text-white-75">Filed by students and staff.</div>
+            </div>
+            <div
+              class="d-none d-sm-flex align-items-center justify-content-center"
+              style="width: 90px; height: 90px; overflow: hidden;"
+              aria-hidden="true"
+            >
+              <img
+                :src="lostIcon"
+                alt="Lost icon"
+                style="width: 70%; height: auto; object-fit: contain; filter: brightness(0) invert(1);"
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
       <!-- Found submissions billboard -->
-  <div class="col-12 col-lg-6">
-    <div
-      class="card billboard-card border-0 shadow-sm overflow-hidden text-white h-100"
-      style="border-radius: 1rem; background: linear-gradient(135deg,#059669 0%, #10b981 50%, #22c55e 100%);"
-    >
-      <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
-        <div>
-          <div class="text-white-50 text-uppercase small fw-semibold mb-1">Found submissions</div>
-          <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : foundCount }}</div>
-          <div class="small text-white-75">Items waiting for a match.</div>
-        </div>
+      <div class="col-12 col-lg-6">
         <div
-          class="d-none d-sm-flex align-items-center justify-content-center"
-          style="width:90px;height:90px;overflow:hidden;"
-          aria-hidden="true"
+          class="card billboard-card border-0 shadow-sm overflow-hidden text-white h-100"
+          style="border-radius: 1rem; background: linear-gradient(135deg, #059669 0%, #10b981 50%, #22c55e 100%);"
         >
-          <img
-            :src="foundIcon"
-            alt="Found Icon"
-            style="width:70%;height:auto;object-fit:contain;filter:brightness(0) invert(1);"
-          />
+          <div class="card-body d-flex align-items-center justify-content-between p-4 p-lg-5">
+            <div>
+              <div class="text-white-50 text-uppercase small fw-semibold mb-1">Found submissions</div>
+              <div class="display-3 fw-bold lh-1">{{ isLoading ? '–' : foundCount }}</div>
+              <div class="small text-white-75">Items waiting for a match.</div>
+            </div>
+            <div
+              class="d-none d-sm-flex align-items-center justify-content-center"
+              style="width: 90px; height: 90px; overflow: hidden;"
+              aria-hidden="true"
+            >
+              <img
+                :src="foundIcon"
+                alt="Found icon"
+                style="width: 70%; height: auto; object-fit: contain; filter: brightness(0) invert(1);"
+              />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
     </div>
 
     <div v-if="errorMessage" class="alert alert-warning" role="alert">
       {{ errorMessage }}
-    </div>
-
-    <div class="row g-3">
-      <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="h5 mb-0">Recent lost reports</h2>
-              <RouterLink class="btn btn-sm btn-outline-primary" :to="{ name: 'browse-lost' }">
-                View all
-              </RouterLink>
-            </div>
-
-            <div v-if="isLoading" class="text-center py-4 text-muted">Loading data...</div>
-            <div v-else-if="recentLost.length === 0" class="text-center py-4 text-muted">
-              No lost items have been reported yet.
-            </div>
-            <ul v-else class="list-group list-group-flush">
-              <li v-for="item in recentLost" :key="item.id" class="list-group-item">
-                <div class="fw-semibold">
-                  {{ item.model || item.brand || 'Lost item' }}
-                </div>
-                <div class="text-muted small">
-                  <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
-                </div>
-                <div class="d-flex flex-wrap gap-3 small text-muted mt-2">
-                  <span>
-                    <span class="me-1" aria-hidden="true">📍</span>
-                    {{ item.location_lost || 'Unknown location' }}
-                  </span>
-                  <span>
-                    <span class="me-1" aria-hidden="true">🗓</span>
-                    {{ formatDate(item.date_lost) }}
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="h5 mb-0">Recent found submissions</h2>
-              <RouterLink class="btn btn-sm btn-outline-primary" :to="{ name: 'browse-found' }">
-                View all
-              </RouterLink>
-            </div>
-
-            <div v-if="isLoading" class="text-center py-4 text-muted">Loading data...</div>
-            <div v-else-if="recentFound.length === 0" class="text-center py-4 text-muted">
-              No found items have been logged yet.
-            </div>
-            <ul v-else class="list-group list-group-flush">
-              <li v-for="item in recentFound" :key="item.id" class="list-group-item">
-                <div class="fw-semibold">
-                  {{ item.model || item.brand || 'Found item' }}
-                </div>
-                <div class="text-muted small">
-                  <span v-if="item.brand && item.model" class="fw-medium">{{ item.brand }} • </span>{{ item.description || 'No description provided.' }}
-                </div>
-                <div class="d-flex flex-wrap gap-3 small text-muted mt-2">
-                  <span>
-                    <span class="me-1" aria-hidden="true">📍</span>
-                    {{ item.location_found || 'Unknown location' }}
-                  </span>
-                  <span>
-                    <span class="me-1" aria-hidden="true">🗓</span>
-                    {{ formatDate(item.date_found) }}
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Matches Modal -->
