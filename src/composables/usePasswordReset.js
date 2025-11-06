@@ -1,7 +1,8 @@
 import { useAuth } from './useAuth'
 import {
   requestPasswordReset as requestPasswordResetService,
-  updateUserPassword as updateUserPasswordService
+  updateUserPassword as updateUserPasswordService,
+  verifyRecoveryToken as verifyRecoveryTokenService
 } from '../services/authService'
 
 function normalizeRecoverySession(params = {}) {
@@ -34,10 +35,25 @@ export function usePasswordReset() {
   }
 
   const applyRecoverySession = async (params = {}) => {
-    const session = normalizeRecoverySession(params)
+    let session = normalizeRecoverySession(params)
 
     if (!session.access_token || !session.refresh_token) {
-      throw new Error('Missing recovery session tokens')
+      const token = params.token || params.recovery_token || params.oob_code
+
+      if (!token) {
+        throw new Error('Missing recovery session tokens')
+      }
+
+      const verification = await verifyRecoveryTokenService({ token })
+      const verifiedSession = normalizeRecoverySession(
+        verification?.session || verification
+      )
+
+      if (!verifiedSession.access_token || !verifiedSession.refresh_token) {
+        throw new Error('Unable to verify recovery session tokens')
+      }
+
+      session = verifiedSession
     }
 
     await adoptSession(session)

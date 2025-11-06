@@ -20,12 +20,14 @@ function shouldRedirectToRecovery(route) {
     return false
   }
 
-  const queryHasToken = ['token', 'access_token', 'refresh_token'].some((key) => {
+  const tokenKeys = ['token', 'access_token', 'refresh_token', 'recovery_token', 'oob_code']
+
+  const queryHasToken = tokenKeys.some((key) => {
     const value = query[key]
     return typeof value === 'string' && value
   })
 
-  const hashHasToken = ['token', 'access_token', 'refresh_token'].some((key) => {
+  const hashHasToken = tokenKeys.some((key) => {
     const value = hashParams.get(key)
     return typeof value === 'string' && value
   })
