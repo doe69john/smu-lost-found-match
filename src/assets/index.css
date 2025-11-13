@@ -537,8 +537,8 @@ small,
   padding: 0.45rem 1.05rem;
   border-radius: 999px;
   border: 1px solid rgba(99, 102, 241, 0.24);
-  background: rgba(99, 102, 241, 0.12);
-  color: var(--color-primary-700);
+  background: var(--surface-base);
+  color: var(--color-secondary);
   font-weight: 600;
   letter-spacing: 0.01em;
   transition: transform var(--transition-medium) var(--transition-timing),
@@ -551,18 +551,44 @@ small,
 .app-header__cta-button:focus-visible {
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
-  background: rgba(99, 102, 241, 0.2);
-  border-color: rgba(99, 102, 241, 0.42);
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.32);
+}
+
+.app-header__cta-button.is-active {
+  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-500));
+  color: var(--text-inverse);
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-header__cta-button.is-active:hover,
+.app-header__cta-button.is-active:focus-visible {
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-400));
 }
 
 .app-header__cta-button--outline {
-  background: var(--surface-base);
+  background: transparent;
   color: var(--color-secondary);
 }
 
 .app-header__cta-button--outline:hover,
 .app-header__cta-button--outline:focus-visible {
   background: rgba(148, 163, 184, 0.18);
+}
+
+.dark .app-header__cta-button:not(.is-active) {
+  background: rgba(15, 23, 42, 0.65);
+  color: var(--text-muted);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.dark .app-header__cta-button:not(.is-active):hover,
+.dark .app-header__cta-button:not(.is-active):focus-visible {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--text-inverse);
 }
 
 .app-header__auth {
