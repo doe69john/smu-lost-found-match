@@ -34,6 +34,11 @@ const displayName = computed(
 const primaryLinks = computed(() => navigation.filter((link) => !CTA_PATHS.includes(link.path)))
 const ctaLinks = computed(() => navigation.filter((link) => CTA_PATHS.includes(link.path)))
 
+const getCtaClasses = (path) => ({
+  'is-active': activePath.value === path,
+  'app-header__cta-button--outline': activePath.value !== path,
+})
+
 const isAuthRoute = computed(() => route.meta?.layout === 'auth')
 
 const isMenuOpen = ref(false)
@@ -169,11 +174,12 @@ const { isDark, toggleTheme } = useTheme()
 
       <div class="app-header__cta-group" aria-label="Quick actions">
         <RouterLink
-          v-for="(link, index) in ctaLinks"
+          v-for="link in ctaLinks"
           :key="link.path"
           class="app-header__cta-button"
-          :class="{ 'app-header__cta-button--outline': index === 1 }"
+          :class="getCtaClasses(link.path)"
           :to="link.path"
+          :aria-current="activePath === link.path ? 'page' : undefined"
         >
           {{ link.name }}
         </RouterLink>
@@ -251,11 +257,12 @@ const { isDark, toggleTheme } = useTheme()
 
         <div class="app-header__drawer-cta">
           <RouterLink
-            v-for="(link, index) in ctaLinks"
+            v-for="link in ctaLinks"
             :key="`cta-${link.path}`"
             class="app-header__cta-button"
-            :class="{ 'app-header__cta-button--outline': index === 1 }"
+            :class="getCtaClasses(link.path)"
             :to="link.path"
+            :aria-current="activePath === link.path ? 'page' : undefined"
             @click="closeMenu"
           >
             {{ link.name }}
